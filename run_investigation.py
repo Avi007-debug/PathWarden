@@ -185,7 +185,7 @@ def ingest_and_extract_detections(
     input_file: str,
     data_dir: str,
     batch_size: int = 25000,
-    max_workers: int = 3,
+    max_workers: int = 1,
     clean: bool = False,
 ) -> tuple[int, int]:
     """Ingest raw log file into events/*.parquet and extract detections/*.parquet with parallel multi-core workers."""
@@ -213,16 +213,71 @@ def ingest_and_extract_detections(
     total_ingested = 0
     all_detections = []
 
-    with open(input_file, "r", encoding="utf-8", errors="replace") as f:
-        with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            futures = []
+    if max_workers <= 1:
+        # Single-process streaming: zero IPC overhead, zero Windows pipe limits, 100% immune to WinError 87
+        with open(input_file, "r", encoding="utf-8", errors="replace") as f:
             curr_lines = []
             batch_idx = 0
             start_line = 1
-
             for line in f:
                 curr_lines.append(line)
                 if len(curr_lines) >= batch_size:
+                    cnt, dets = _worker_parse_and_write_chunk(
+                        curr_lines, batch_idx, events_dir, source_file_id, is_text_log, start_line
+                    )
+                    total_ingested += cnt
+                    all_detections.extend(dets)
+                    batch_idx += 1
+                    start_line += len(curr_lines)
+                    curr_lines = []
+                    if total_ingested % 50000 < batch_size:
+                        metrics = get_system_metrics()
+                        logger.info("Ingested %d lines (RSS: %.1f MB, System RAM: %.1f GB) ...",
+                                    total_ingested, metrics.memory_process_mb, metrics.memory_used_gb)
+            if curr_lines:
+                cnt, dets = _worker_parse_and_write_chunk(
+                    curr_lines, batch_idx, events_dir, source_file_id, is_text_log, start_line
+                )
+                total_ingested += cnt
+                all_detections.extend(dets)
+    else:
+        # Multi-process pool with bounded queue for smaller IPC payloads
+        with open(input_file, "r", encoding="utf-8", errors="replace") as f:
+            with ProcessPoolExecutor(max_workers=max_workers) as executor:
+                futures = []
+                curr_lines = []
+                batch_idx = 0
+                start_line = 1
+
+                for line in f:
+                    curr_lines.append(line)
+                    if len(curr_lines) >= batch_size:
+                        fut = executor.submit(
+                            _worker_parse_and_write_chunk,
+                            curr_lines,
+                            batch_idx,
+                            events_dir,
+                            source_file_id,
+                            is_text_log,
+                            start_line,
+                        )
+                        futures.append(fut)
+                        batch_idx += 1
+                        start_line += len(curr_lines)
+                        curr_lines = []
+
+                        if len(futures) >= max_workers * 2:
+                            for done_fut in as_completed(futures[:max_workers]):
+                                cnt, dets = done_fut.result()
+                                total_ingested += cnt
+                                all_detections.extend(dets)
+                            futures = [f for f in futures if not f.done()]
+                            if total_ingested % 50000 < batch_size:
+                                metrics = get_system_metrics()
+                                logger.info("Ingested %d lines across %d cores (RSS: %.1f MB, System RAM: %.1f GB) ...",
+                                            total_ingested, max_workers, metrics.memory_process_mb, metrics.memory_used_gb)
+
+                if curr_lines:
                     fut = executor.submit(
                         _worker_parse_and_write_chunk,
                         curr_lines,
@@ -233,38 +288,11 @@ def ingest_and_extract_detections(
                         start_line,
                     )
                     futures.append(fut)
-                    batch_idx += 1
-                    start_line += len(curr_lines)
-                    curr_lines = []
 
-                    # Keep pool bounded to avoid loading excessive batches into memory
-                    if len(futures) >= max_workers * 2:
-                        for done_fut in as_completed(futures[:max_workers]):
-                            cnt, dets = done_fut.result()
-                            total_ingested += cnt
-                            all_detections.extend(dets)
-                        futures = [f for f in futures if not f.done()]
-                        if total_ingested % 50000 < batch_size:
-                            metrics = get_system_metrics()
-                            logger.info("Ingested %d lines across %d cores (RSS: %.1f MB, System RAM: %.1f GB) ...",
-                                        total_ingested, max_workers, metrics.memory_process_mb, metrics.memory_used_gb)
-
-            if curr_lines:
-                fut = executor.submit(
-                    _worker_parse_and_write_chunk,
-                    curr_lines,
-                    batch_idx,
-                    events_dir,
-                    source_file_id,
-                    is_text_log,
-                    start_line,
-                )
-                futures.append(fut)
-
-            for fut in as_completed(futures):
-                cnt, dets = fut.result()
-                total_ingested += cnt
-                all_detections.extend(dets)
+                for fut in as_completed(futures):
+                    cnt, dets = fut.result()
+                    total_ingested += cnt
+                    all_detections.extend(dets)
 
     logger.info("Parallel Log Ingestion Complete: %d events written to %s", total_ingested, events_dir)
 
@@ -527,7 +555,7 @@ def main():
     parser.add_argument("--data-dir", default="./data", help="Output data directory for Parquet storage")
     parser.add_argument("--max-memory-gb", type=float, default=8.0, help="Max container memory budget")
     parser.add_argument("--batch-size", type=int, default=25000, help="Chunk batch size for stream reader")
-    parser.add_argument("--workers", type=int, default=3, help="Number of parallel worker processes (max 3)")
+    parser.add_argument("--workers", type=int, default=1, help="Number of parallel worker processes (1 for zero-pipe streaming, or 2-3 for multi-core)")
     parser.add_argument("--clean", action="store_true", help="Clean old Parquet partitions in data/events before ingesting")
     parser.add_argument("--skip-ingestion", action="store_true", help="Skip Phase 1 ingestion and reuse existing Parquet files in data/events")
     args = parser.parse_args()
