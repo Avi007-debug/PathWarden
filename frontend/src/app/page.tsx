@@ -22,6 +22,7 @@ import {
   Radio,
   FileCheck2,
   Gauge,
+  Upload,
 } from "lucide-react";
 
 export default function OverviewDashboardPage() {
@@ -78,10 +79,18 @@ export default function OverviewDashboardPage() {
           <Button
             variant="cyan"
             size="md"
+            icon={<Upload className="w-4 h-4" />}
+            onClick={() => setRunModalOpen(true)}
+          >
+            Choose & Test Log File
+          </Button>
+          <Button
+            variant="secondary"
+            size="md"
             icon={<PlayCircle className="w-4 h-4" />}
             onClick={() => setRunModalOpen(true)}
           >
-            Run Pipeline
+            Presets / Path
           </Button>
           <Button
             variant="secondary"
@@ -89,7 +98,7 @@ export default function OverviewDashboardPage() {
             icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />}
             onClick={loadDashboardData}
           >
-            Sync Telemetry
+            Sync
           </Button>
         </div>
       </div>

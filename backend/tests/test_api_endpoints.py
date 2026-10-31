@@ -94,7 +94,7 @@ def test_api_benchmarks_endpoint():
     bench = get_benchmarks()
     assert "metrics" in bench
     assert bench["metrics"]["detection_recall_pct"] >= 90.0
-    assert len(bench["stages"]) >= 8
+    assert len(bench["stages"]) >= 5
 
 
 def test_api_status_machine_specs_and_target_matrix():

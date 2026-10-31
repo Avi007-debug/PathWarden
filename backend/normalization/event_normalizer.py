@@ -144,7 +144,7 @@ class EventNormalizer:
         # We must store them rather than discard — contract rule.
         extra: Dict[str, Any] = {}
         for key, val in adapter_record.items():
-            if key not in _CANONICAL_KEYS:
+            if key not in _CANONICAL_KEYS and key != "raw_line":
                 extra[key] = val
 
         if extra:

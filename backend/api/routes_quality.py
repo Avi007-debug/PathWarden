@@ -39,12 +39,16 @@ def get_data_quality():
     try:
         con.execute(f"CREATE VIEW raw_quality AS SELECT * FROM read_parquet('{quality_glob}')")
         rows = con.execute("SELECT * FROM raw_quality LIMIT 1").fetchall()
-        cols = [desc[0] for desc in con.description]
-        con.close()
-        if rows:
+        cols = [desc[0] for desc in con.description] if con.description else []
+        if rows and cols:
             return dict(zip(cols, rows[0]))
     except Exception as exc:  # noqa: BLE001
         logger.error("get_data_quality query failed: %s", exc)
+    finally:
+        try:
+            con.close()
+        except Exception:
+            pass
 
     return _demo_quality()
 

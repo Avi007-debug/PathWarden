@@ -139,7 +139,7 @@ class NetworkAdapter:
             "src_ip", "dst_ip", "src_port", "dst_port",
             "network_protocol", "proto", "action", "verdict",
             "host_name", "device", "host", "user_name", "user", "username",
-            "sensor_id", "collector", "agent", "parse_status",
+            "sensor_id", "collector", "agent", "parse_status", "raw_line",
         }
         for k, v in parsed.items():
             if k not in known_keys and v is not None:

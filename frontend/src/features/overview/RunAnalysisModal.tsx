@@ -243,7 +243,7 @@ export function RunAnalysisModal({ isOpen, onClose, onComplete }: RunAnalysisMod
 
                 <button
                   type="button"
-                  onClick={() => setDatasetPath("C:\\Users\\Vedant\\Downloads\\firex-30g")}
+                  onClick={() => setDatasetPath("firex-30g")}
                   className={`p-2 text-left border-2 transition-all ${
                     datasetPath.includes("firex-30g")
                       ? "border-[#B7FF3C] bg-[#B7FF3C]/10 text-[var(--text-primary)]"

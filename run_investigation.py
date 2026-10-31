@@ -324,7 +324,17 @@ def _extract_firewall_sql_detections(events_dir: str) -> list[dict]:
 def _write_parquet_batch(records: list, output_dir: str, batch_idx: int) -> None:
     clean_records = []
     for r in records:
-        rc = {k: (json.dumps(v) if isinstance(v, (dict, list)) else v) for k, v in r.items()}
+        rc = {}
+        for k, v in r.items():
+            if k == "extra" and isinstance(v, dict):
+                v = {ek: ev for ek, ev in v.items() if ek != "raw_line"}
+            if isinstance(v, (dict, list)):
+                try:
+                    rc[k] = json.dumps(v)
+                except Exception:
+                    rc[k] = "{}"
+            else:
+                rc[k] = v
         clean_records.append(rc)
 
     table = pa.Table.from_pylist(clean_records)
