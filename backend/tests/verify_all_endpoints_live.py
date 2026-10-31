@@ -1,22 +1,15 @@
 """Live HTTP verification of all PathWarden API endpoints."""
 
+import os
 import sys
-import time
-import threading
-import requests
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, ".")
-import uvicorn
+
+from fastapi.testclient import TestClient
 import main
 
-def start_server():
-    uvicorn.run(main.app, host="127.0.0.1", port=8005, log_level="error")
-
-server_thread = threading.Thread(target=start_server, daemon=True)
-server_thread.start()
-time.sleep(2)
-
-base = "http://127.0.0.1:8005"
+client = TestClient(main.app)
 all_passed = True
 
 endpoints_to_test = [
@@ -58,9 +51,8 @@ endpoints_to_test = [
 
 print("=== PATHWARDEN LIVE HTTP API VERIFICATION ===")
 for path, expected_status, validator in endpoints_to_test:
-    url = f"{base}{path}"
     try:
-        res = requests.get(url, timeout=5)
+        res = client.get(path)
         status_ok = res.status_code == expected_status
         data = res.json()
         val_ok = validator(data)
@@ -75,7 +67,7 @@ for path, expected_status, validator in endpoints_to_test:
 
 # Test POST /run
 try:
-    res = requests.post(f"{base}/run", json={"dataset_path": "./data", "tier": "ADVANCED_30GB"}, timeout=5)
+    res = client.post("/run", json={"dataset_path": "./data", "tier": "ADVANCED_30GB"})
     if res.status_code in (200, 409):
         print(f"[PASS] {res.status_code} POST /run -> {res.json().get('status')}")
     else:
@@ -90,5 +82,6 @@ if all_passed:
     sys.exit(0)
 else:
     print("\n>>> SOME CHECKS FAILED <<<")
+    sys.exit(1)
     sys.exit(1)
 
