@@ -22,8 +22,17 @@ import {
   DEMO_RAW_EVIDENCE_MAP,
 } from "../demo/syntheticData";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+export const getApiBaseUrl = (): string => {
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) return process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== "undefined") {
+    const isLocalhost =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
+    if (isLocalhost) return "http://localhost:8000";
+  }
+  return "";
+};
 
 export class ApiError extends Error {
   constructor(
@@ -42,12 +51,14 @@ async function request<T>(
   options?: RequestInit,
   isDemoMode: boolean = false
 ): Promise<T> {
-  // If explicitly in Demo Mode, return synthetic fixtures immediately
-  if (isDemoMode) {
+  const baseUrl = getApiBaseUrl();
+
+  // If explicitly in Demo Mode or if on cloud hosting without an external backend, return synthetic fixtures
+  if (isDemoMode || !baseUrl) {
     return getSyntheticResponse<T>(endpoint);
   }
 
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${baseUrl}${endpoint}`;
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
@@ -163,5 +174,6 @@ export const pathWardenApi = {
   getBenchmark: (isDemo = false) => request<BenchmarkReport>("/bench", undefined, isDemo),
   getEvidence: (eventUid: string, ctx = 5, isDemo = false) =>
     request<RawEvidenceRecord>(`/evidence?event_uid=${encodeURIComponent(eventUid)}&ctx=${ctx}`, undefined, isDemo),
+  hasBackendUrl: () => Boolean(getApiBaseUrl()),
 };
 

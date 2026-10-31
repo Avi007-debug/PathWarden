@@ -33,6 +33,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const checkBackendHealth = useCallback(async () => {
+    // If deployed on cloud hosting without an explicit external backend URL, do not probe localhost
+    if (!pathWardenApi.hasBackendUrl()) {
+      setBackendOnline(false);
+      return;
+    }
     try {
       await pathWardenApi.getStatus(false);
       setBackendOnline(true);
