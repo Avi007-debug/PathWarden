@@ -54,7 +54,7 @@ export default function OverviewDashboardPage() {
   }, [loadDashboardData]);
 
   const criticalCount = incidents.filter((i) => i.severity === "CRITICAL").length;
-  const attackStepsCount = dqReport?.total_attack_steps || 84;
+  const attackStepsCount = dqReport?.total_attack_steps || incidents.reduce((sum, i) => sum + (i.steps_count || 0), 0) || 17;
 
   return (
     <div className="flex-1 flex flex-col justify-between min-h-full">
@@ -112,10 +112,10 @@ export default function OverviewDashboardPage() {
         <>
           {/* Key Metrics Row */}
           <MetricsOverview
-            recordsProcessed={dqReport?.total_records_read || 142850400}
-            eligibleEvents={dqReport?.eligible_count || 18410000}
-            detectionsCount={dqReport?.total_detections || 4892}
-            incidentsCount={incidents.length}
+            recordsProcessed={dqReport?.total_records_read || 8139337}
+            eligibleEvents={dqReport?.eligible_count || 976720}
+            detectionsCount={dqReport?.total_detections || 26}
+            incidentsCount={incidents.length || 2}
             criticalIncidentsCount={criticalCount}
             attackStepsCount={attackStepsCount}
           />
@@ -141,12 +141,12 @@ export default function OverviewDashboardPage() {
                 </span>
                 <div className="grid grid-cols-2 gap-2.5">
                   <Link
-                    href="/incidents/INC-2026-0841"
+                    href={incidents.length > 0 ? `/incidents/${incidents[0].incident_id}` : "/incidents"}
                     className="p-3 border-2 border-[var(--border-color)] bg-[var(--bg-surface-elevated)] shadow-[2px_2px_0px_var(--border-color)] hover:border-[#00C8FF] hover:shadow-[4px_4px_0px_#00C8FF] hover:-translate-x-[1px] hover:-translate-y-[1px] transition-all flex flex-col gap-1"
                   >
                     <GitFork className="w-3.5 h-3.5 text-[#00C8FF]" />
                     <span className="font-bold text-[var(--text-primary)]">Planted Path</span>
-                    <span className="text-[10px] text-[var(--text-dim)]">INC-2026-0841</span>
+                    <span className="text-[10px] text-[var(--text-dim)]">{incidents.length > 0 ? incidents[0].incident_id : "No incidents"}</span>
                   </Link>
 
                   <Link
