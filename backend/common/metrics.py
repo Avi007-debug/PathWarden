@@ -18,3 +18,4 @@ def get_system_metrics() -> SystemMetrics:
         memory_percent=mem.percent,
         cpu_percent=psutil.cpu_percent(interval=None)
     )
+

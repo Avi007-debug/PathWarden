@@ -15,3 +15,4 @@ class SchemaValidationError(PathWardenError):
 class MemoryLimitExceeded(PathWardenError):
     """Raised when memory consumption approaches 8.0 GB budget ceiling."""
     pass
+

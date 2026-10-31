@@ -18,3 +18,4 @@ parsers:
     format: "text"
     adapter: "generic"
     regex: "^(?P<timestamp>\\S+)\\s+(?P<host>\\S+)\\s+(?P<process>\\S+):\\s+(?P<message>.*)$"
+

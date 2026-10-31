@@ -29,3 +29,4 @@ class ConfidenceCategory(str, Enum):
     STRONG = "STRONG"
     MODERATE = "MODERATE"
     INFERRED = "INFERRED"
+

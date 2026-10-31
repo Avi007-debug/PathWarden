@@ -12,3 +12,4 @@ mappings:
     timestamp_field: "TimeCreated.SystemTime"
     host_field: "Computer"
     user_field: "TargetUserName"
+

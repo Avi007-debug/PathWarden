@@ -35,3 +35,4 @@ fields:
     dest_ip: { type: string, required: false }
     dest_port: { type: integer, required: false }
     protocol: { type: string, required: false }
+

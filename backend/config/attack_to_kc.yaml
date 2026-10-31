@@ -14,3 +14,4 @@ kill_chain_stages:
     tactics: ["Command and Control"]
   ACTIONS_ON_OBJECTIVES:
     tactics: ["Credential Access", "Discovery", "Lateral Movement", "Collection", "Exfiltration", "Impact"]
+

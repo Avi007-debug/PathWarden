@@ -18,3 +18,4 @@ rules:
     severity: "CRITICAL"
     tactic: "LATERAL_MOVEMENT"
     query: "SELECT * FROM events WHERE event_type = 'AUTH_LOGIN' AND auth_package = 'NTLM'"
+

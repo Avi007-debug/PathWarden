@@ -19,3 +19,4 @@ def format_bytes(bytes_count: int) -> str:
             return f"{bytes_count:.2f} {unit}"
         bytes_count /= 1024.0
     return f"{bytes_count:.2f} PB"
+

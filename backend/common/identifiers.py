@@ -14,3 +14,4 @@ def generate_step_uid() -> str:
 def generate_incident_id(index: int) -> str:
     """Generate sequential incident identifier."""
     return f"INC-2026-{index:04d}"
+

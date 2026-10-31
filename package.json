@@ -10,3 +10,4 @@
     "typecheck": "npm run typecheck --prefix frontend"
   }
 }
+
