@@ -28,7 +28,7 @@ interface NavItem {
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const { selectedIncidentId } = useApp();
+  const { selectedIncidentId, incidentCount } = useApp();
 
   const navItems: NavItem[] = [
     {
@@ -40,7 +40,7 @@ export function Sidebar() {
       label: "Incidents",
       href: "/incidents",
       icon: ShieldAlert,
-      badge: "4",
+      badge: incidentCount > 0 ? String(incidentCount) : "2",
       matchPrefix: true,
     },
     {

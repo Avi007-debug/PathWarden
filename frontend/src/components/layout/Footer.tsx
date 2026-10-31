@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useApp } from "@/lib/context/AppContext";
 import {
   ShieldCheck,
   Activity,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 export function Footer() {
+  const { selectedIncidentId } = useApp();
   const scrollToTop = () => {
     if (typeof window !== "undefined") {
       const mainElement = document.querySelector("main");
@@ -79,11 +81,11 @@ export function Footer() {
               <span>Incidents Explorer</span>
             </Link>
             <Link
-              href="/incidents/INC-2026-0841"
+              href={`/incidents/${selectedIncidentId}`}
               className="flex items-center gap-1.5 text-[var(--text-muted)] hover:text-[#00C8FF] hover:translate-x-1 transition-all"
             >
               <GitFork className="w-3 h-3 text-[#00C8FF]" />
-              <span>Planted Attack Path (INC-0841)</span>
+              <span>Attack Path DAG ({selectedIncidentId})</span>
             </Link>
             <Link
               href="/reachability"
