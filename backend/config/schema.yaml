@@ -1,38 +1,278 @@
-# PathWarden Normalized ECS-aligned Event Schema
-version: "5.1"
+# PathWarden Canonical Event Schema — v1.0
+# Aligned with: PathWarden Shared Variables & Interface Contract (Section 2)
+#
+# Rules:
+#   - required: true  means the field MUST be present and non-null in every
+#     ELIGIBLE record. Records missing required fields get DQFlag.PARTIAL_PARSE.
+#   - required: false means the field MAY be null. Use null — never empty string
+#     or zero — when the source does not supply a value (contract Section 5).
+#   - The `extra` field captures ALL unrecognised source fields. Never discard.
+#   - process_id is stored as string because PIDs must be scoped to a host;
+#     integer PIDs are not globally unique across machines.
+#   - This schema is versioned. Record the version alongside every Parquet batch.
+
+version: "1.0"
+
+# ── Identifiers ────────────────────────────────────────────────────────────────
 fields:
-  event_id:
+
+  event_uid:
     type: string
     required: true
-    description: "Unique surrogate key for normalized event"
-  timestamp:
-    type: datetime
+    description: >
+      Unique PathWarden event identifier. Deterministically generated from
+      (source_file_id, byte_offset). Stable across retries and parallel workers.
+      Format: EVT-<16-char hex>. Never reuse for a different event.
+
+  source_event_id:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Original event ID supplied by the source (e.g. Windows EventRecordID,
+      syslog sequence number). Never substitute event_uid here.
+
+  batch_id:
+    type: string
     required: true
-    description: "UTC normalized ISO 8601 timestamp"
+    description: >
+      Ingestion batch identifier. Stable for checkpointing.
+      Format: BATCH-<file_prefix>-<chunk_index>.
+
+  source_file_id:
+    type: string
+    required: true
+    description: >
+      Stable identifier for the originating raw file.
+      Format: SRC-<12-char hex of file path>.
+
+# ── Timestamps ─────────────────────────────────────────────────────────────────
+
+  event_ts:
+    type: timestamp
+    required: false
+    nullable: true
+    timezone: UTC
+    description: >
+      Event occurrence time, normalised to UTC ISO-8601. NULL when the source
+      timestamp is absent or cannot be parsed. Do NOT substitute a fake timestamp.
+      Downstream consumers must use ingest_ts when event_ts is null.
+
+  event_ts_original:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Original timestamp string exactly as received from the source, before any
+      parsing or timezone conversion. Preserved for audit and reconciliation.
+
+  ingest_ts:
+    type: timestamp
+    required: true
+    timezone: UTC
+    description: >
+      Time PathWarden ingested and normalised this record (wall-clock UTC).
+      Always present. Use event_ts for event chronology; ingest_ts for
+      processing chronology — do not substitute one for the other.
+
+# ── Source classification ──────────────────────────────────────────────────────
+
+  source_type:
+    type: string
+    required: true
+    description: >
+      Log source family or adapter identifier (e.g. "firewall", "windows_security",
+      "windows_sysmon"). Set by the parser adapter, not inferred at normalisation.
+
+  sensor_id:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Agent, sensor or collector identifier when present in the source
+      (e.g. agent.id, hostname of the collector).
+
+  event_category:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Original source category, preserved verbatim (e.g. "network", "process",
+      "authentication"). Not normalised — kept for forensic fidelity.
+
   event_type:
     type: string
-    required: true
-    allowed_values: ["PROCESS_CREATE", "NETWORK_CONNECT", "FILE_MODIFY", "AUTH_LOGIN", "REGISTRY_SET"]
-  source_format:
+    required: false
+    nullable: true
+    description: >
+      Normalised event type when semantics are known. If the type cannot be
+      mapped to a known canonical value, set to null and add DQFlag UNKNOWN_EVENT_TYPE.
+
+  action:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Normalised action (e.g. "allow", "block", "logon", "process_create").
+      Only set when semantics are unambiguous from the source.
+
+  outcome:
+    type: string
+    required: false
+    nullable: true
+    allowed_values: ["SUCCESS", "FAILURE", "UNKNOWN"]
+    description: >
+      Normalised outcome. Set only when source evidence explicitly states it.
+      Do not infer SUCCESS or FAILURE from absence of failure indicators.
+
+# ── Host ───────────────────────────────────────────────────────────────────────
+
+  host_id:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Resolved host identity assigned by FR-4 entity resolution. FR-1 sets this
+      to null; original hostname is in host_name. Do not treat IP as host identity.
+
+  host_name:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Hostname as supplied by the source. Retain original casing and domain suffix.
+      Add DQFlag HOST_INFERRED if derived from context rather than a source field.
+
+# ── User ───────────────────────────────────────────────────────────────────────
+
+  user_id:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Resolved user identity assigned by FR-4 entity resolution. FR-1 sets to null.
+      Preserve username and domain in user_name even when user_id is available.
+
+  user_name:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Username as supplied by the source, including domain context where present
+      (e.g. "CORP\\j.doe", "dinesh.chhabra"). Add DQFlag USER_INFERRED if derived.
+
+# ── Network ────────────────────────────────────────────────────────────────────
+
+  src_ip:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Source IP address (IPv4 or IPv6), validated but stored as string.
+      Add DQFlag IP_VALIDATION_FAILED if the value does not parse as a valid IP.
+      Do not treat IP as a permanent host identity across time.
+
+  src_port:
+    type: integer
+    required: false
+    nullable: true
+    description: Source port number (0–65535). Null if not present in source.
+
+  dst_ip:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Destination IP address (IPv4 or IPv6), validated but stored as string.
+
+  dst_port:
+    type: integer
+    required: false
+    nullable: true
+    description: Destination port number (0–65535). Null if not present in source.
+
+  network_protocol:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Normalised network protocol (e.g. "TCP", "UDP", "ICMP", "DNS").
+      Use uppercase. Null when not present or cannot be determined.
+
+# ── Process ────────────────────────────────────────────────────────────────────
+
+  process_id:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Process identifier scoped to the host as a string (e.g. "WS-EXEC-04:1234").
+      PID alone is NOT globally unique — always scope to host_name.
+      Raw numeric PID is preserved in extra.pid if needed.
+
+  parent_process_id:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Parent process identifier, host-scoped (e.g. "WS-EXEC-04:996").
+
+  process_entity_id:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Stable process entity identifier when available from the source
+      (e.g. Sysmon ProcessGuid). More reliable than PID for process tracking.
+
+  session_id:
+    type: string
+    required: false
+    nullable: true
+    description: >
+      Source session identifier when present (e.g. Windows LogonId, SSH session).
+
+# ── Provenance & Quality ───────────────────────────────────────────────────────
+
+  raw_event_reference:
     type: string
     required: true
-  host:
-    name: { type: string, required: true }
-    ip: { type: string, required: false }
-    os: { type: string, required: false }
-  user:
-    name: { type: string, required: true }
-    domain: { type: string, required: false }
-    sid: { type: string, required: false }
-  process:
-    name: { type: string, required: false }
-    pid: { type: integer, required: false }
-    parent_pid: { type: integer, required: false }
-    command_line: { type: string, required: false }
-    hash_sha256: { type: string, required: false }
-  network:
-    src_ip: { type: string, required: false }
-    dest_ip: { type: string, required: false }
-    dest_port: { type: integer, required: false }
-    protocol: { type: string, required: false }
+    description: >
+      Reference back to the original raw record. Allows any downstream consumer
+      to locate the exact bytes in the source file.
+      Format: <source_file_id>@byte:<byte_offset>:line:<line_number>
 
+  parse_status:
+    type: string
+    required: true
+    allowed_values: ["PARSED", "PARTIAL", "MALFORMED", "UNSUPPORTED_FORMAT", "UNCLASSIFIED"]
+    description: >
+      Status of the parser for this record. Separate from terminal disposition.
+      A PARTIAL parse can still yield an ELIGIBLE record.
+
+  dq_flags:
+    type: array
+    items: string
+    required: true
+    description: >
+      Zero or more non-terminal data quality flags. An empty list means no quality
+      concerns were detected. Flags may overlap (a record can have both
+      TIMESTAMP_UNCERTAIN and HOST_INFERRED). See common/enums.DQFlag for values.
+
+  schema_version:
+    type: string
+    required: true
+    description: >
+      Version of this canonical schema used to produce the record.
+      Must match the 'version' field at the top of this file.
+
+# ── Catch-all ─────────────────────────────────────────────────────────────────
+
+  extra:
+    type: object
+    required: true
+    description: >
+      All source fields that did not map to any canonical column above.
+      Never discard unknown fields — store them here verbatim.
+      Downstream consumers may query extra for source-specific values.
+      An empty dict {{}} is valid when all fields were mapped.
