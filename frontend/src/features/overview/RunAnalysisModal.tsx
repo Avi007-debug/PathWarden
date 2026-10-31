@@ -15,7 +15,7 @@ interface RunAnalysisModalProps {
 }
 
 export function RunAnalysisModal({ isOpen, onClose, onComplete }: RunAnalysisModalProps) {
-  const { isDemoMode } = useApp();
+  const { isDemoMode, setDemoMode } = useApp();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -67,18 +67,21 @@ export function RunAnalysisModal({ isOpen, onClose, onComplete }: RunAnalysisMod
     setIsSuccess(false);
 
     try {
-      const res = await pathWardenApi.uploadAndRun(selectedFile, isDemoMode);
+      const res = await pathWardenApi.uploadAndRun(selectedFile, false);
       setIsSuccess(true);
       setStatusMessage(
         res.message ||
           `Successfully ingested ${selectedFile.name}: ${res.events_processed || 10000} events, ${res.incidents_count || 25} incidents formed!`
       );
       setRunSummary({
-        events: res.events_processed || 10000,
-        detections: res.detections_extracted || 480,
-        incidents: res.incidents_count || 25,
+        events: res.events_processed,
+        detections: res.detections_extracted,
+        incidents: res.incidents_count,
         runId: res.run_id,
       });
+      // Clear demo mode and switch to live backend so real results are displayed
+      setDemoMode(false);
+      localStorage.removeItem("pathwarden_demo_mode");
       if (onComplete) onComplete();
     } catch (err: unknown) {
       const error = err as Error;

@@ -32,7 +32,7 @@ export function MetricsOverview({
     {
       label: "Records Ingested",
       value: formatNumber(recordsProcessed),
-      subtext: "142.8M raw records (30GB Tier)",
+      subtext: `${formatNumber(recordsProcessed)} records analyzed`,
       icon: FileText,
       accent: "text-[#2563FF]",
       borderClass: "border-l-4 border-l-[#2563FF]",
@@ -41,7 +41,7 @@ export function MetricsOverview({
     {
       label: "Eligible Events",
       value: formatNumber(eligibleEvents),
-      subtext: "12.8% security candidate ratio",
+      subtext: `${formatNumber(eligibleEvents)} security candidates`,
       icon: Filter,
       accent: "text-[#00C8FF]",
       borderClass: "border-l-4 border-l-[#00C8FF]",
@@ -50,7 +50,7 @@ export function MetricsOverview({
     {
       label: "Suspicious Detections",
       value: formatNumber(detectionsCount),
-      subtext: "SQL rule predicates triggered",
+      subtext: `${formatNumber(detectionsCount)} rule predicates triggered`,
       icon: AlertTriangle,
       accent: "text-[#FFB800]",
       borderClass: "border-l-4 border-l-[#FFB800]",
@@ -59,7 +59,7 @@ export function MetricsOverview({
     {
       label: "Attack Steps",
       value: formatNumber(attackStepsCount),
-      subtext: "Contextually validated attack actions",
+      subtext: `${formatNumber(attackStepsCount)} validated attack actions`,
       icon: GitFork,
       accent: "text-[#00BFA6]",
       borderClass: "border-l-4 border-l-[#00BFA6]",
@@ -68,7 +68,7 @@ export function MetricsOverview({
     {
       label: "Correlated Incidents",
       value: formatNumber(incidentsCount),
-      subtext: "Isolated multi-stage attack clusters",
+      subtext: `${formatNumber(incidentsCount)} isolated attack clusters`,
       icon: ShieldAlert,
       accent: "text-[#86D400] dark:text-[#B7FF3C]",
       borderClass: "border-l-4 border-l-[#B7FF3C]",
@@ -77,7 +77,7 @@ export function MetricsOverview({
     {
       label: "Planted Intrusions",
       value: formatNumber(criticalIncidentsCount),
-      subtext: "Priority Tier-0 compromise vectors",
+      subtext: `${formatNumber(criticalIncidentsCount)} priority compromises`,
       icon: Flame,
       accent: "text-red-500",
       borderClass: "border-l-4 border-l-red-500",
