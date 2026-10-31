@@ -186,6 +186,7 @@ def ingest_and_extract_detections(
     data_dir: str,
     batch_size: int = 25000,
     max_workers: int = 3,
+    clean: bool = False,
 ) -> tuple[int, int]:
     """Ingest raw log file into events/*.parquet and extract detections/*.parquet with parallel multi-core workers."""
     from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -194,6 +195,14 @@ def ingest_and_extract_detections(
     detections_dir = os.path.join(data_dir, "detections")
     os.makedirs(events_dir, exist_ok=True)
     os.makedirs(detections_dir, exist_ok=True)
+
+    if clean:
+        logger.info("Cleaning previous Parquet partitions in %s ...", events_dir)
+        for old_p in glob.glob(os.path.join(events_dir, "*.parquet")):
+            try:
+                os.remove(old_p)
+            except Exception:
+                pass
 
     is_text_log = not input_file.endswith(".json") and not input_file.endswith(".jsonl")
     source_file_id = os.path.basename(input_file)
@@ -519,6 +528,8 @@ def main():
     parser.add_argument("--max-memory-gb", type=float, default=8.0, help="Max container memory budget")
     parser.add_argument("--batch-size", type=int, default=25000, help="Chunk batch size for stream reader")
     parser.add_argument("--workers", type=int, default=3, help="Number of parallel worker processes (max 3)")
+    parser.add_argument("--clean", action="store_true", help="Clean old Parquet partitions in data/events before ingesting")
+    parser.add_argument("--skip-ingestion", action="store_true", help="Skip Phase 1 ingestion and reuse existing Parquet files in data/events")
     args = parser.parse_args()
 
     t_start = time.time()
@@ -570,14 +581,40 @@ def main():
             sys.exit(1)
 
     file_size_gb = os.path.getsize(input_file) / (1024 ** 3)
-    print(f"\n[PHASE 1/3] Streaming Ingestion & Normalization ({file_size_gb:.2f} GB) ...")
-    total_events, total_detections = ingest_and_extract_detections(
-        input_file=input_file,
-        data_dir=args.data_dir,
-        batch_size=args.batch_size,
-        max_workers=args.workers,
-    )
-    t_ingest = time.time() - t_start
+    if args.skip_ingestion:
+        events_glob = os.path.join(args.data_dir, "events", "*.parquet").replace("\\", "/")
+        existing = glob.glob(events_glob)
+        if not existing:
+            print("[ERROR] --skip-ingestion was passed, but no parquet partitions found in data/events!")
+            sys.exit(1)
+        con = duckdb.connect(":memory:")
+        total_events = con.execute(f"SELECT count(*) FROM read_parquet('{events_glob}')").fetchone()[0]
+        con.close()
+        print(f"\n[PHASE 1/3] Reusing {len(existing)} Existing Parquet Partitions ({total_events:,} events) ...")
+        t_ingest = 0.05
+        detections_dir = os.path.join(args.data_dir, "detections")
+        os.makedirs(detections_dir, exist_ok=True)
+        detection_records = _extract_firewall_sql_detections(os.path.join(args.data_dir, "events"))
+        if detection_records:
+            clean_detections = []
+            for d in detection_records:
+                dc = {k: (json.dumps(v) if isinstance(v, (dict, list)) else v) for k, v in d.items()}
+                clean_detections.append(dc)
+            table = pa.Table.from_pylist(clean_detections)
+            det_path = os.path.join(detections_dir, "detections.parquet")
+            pq.write_table(table, det_path, compression="snappy")
+            logger.info("Saved %d detections to %s", len(detection_records), det_path)
+        total_detections = len(detection_records)
+    else:
+        print(f"\n[PHASE 1/3] Streaming Ingestion & Normalization ({file_size_gb:.2f} GB) ...")
+        total_events, total_detections = ingest_and_extract_detections(
+            input_file=input_file,
+            data_dir=args.data_dir,
+            batch_size=args.batch_size,
+            max_workers=args.workers,
+            clean=args.clean,
+        )
+        t_ingest = time.time() - t_start
     print(f"  -> Ingested {total_events:,} events in {t_ingest:.2f}s")
     print(f"  -> Extracted {total_detections:,} threat detections")
 
