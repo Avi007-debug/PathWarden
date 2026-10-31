@@ -12,15 +12,17 @@ interface AppContextValue {
   checkBackendHealth: () => Promise<void>;
   selectedIncidentId: string;
   setSelectedIncidentId: (id: string) => void;
+  incidentCount: number;
 }
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(true); // Default to synthetic scenario demo
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
-  const [selectedIncidentId, setSelectedIncidentId] = useState<string>("INC-2026-0841");
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string>("INC-001");
+  const [incidentCount, setIncidentCount] = useState<number>(2);
 
   const applyTheme = useCallback((t: "dark" | "light") => {
     if (t === "dark") {
@@ -33,16 +35,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const checkBackendHealth = useCallback(async () => {
-    // If deployed on cloud hosting without an explicit external backend URL, do not probe localhost
     if (!pathWardenApi.hasBackendUrl()) {
       setBackendOnline(false);
+      setIsDemoMode(true);
       return;
     }
     try {
       await pathWardenApi.getStatus(false);
       setBackendOnline(true);
+      setIsDemoMode(false);
+      try {
+        const incs = await pathWardenApi.getIncidents(false);
+        if (incs && incs.length > 0) {
+          setSelectedIncidentId(incs[0].incident_id);
+          setIncidentCount(incs.length);
+        }
+      } catch {
+        // Ignored
+      }
     } catch {
       setBackendOnline(false);
+      const savedMode = localStorage.getItem("pathwarden_demo_mode");
+      if (savedMode !== "false") {
+        setIsDemoMode(true);
+      }
     }
   }, []);
 
@@ -59,6 +75,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       applyTheme(initialTheme);
     }
 
+    // Restore user's explicit demo mode preference only if they set it
     const savedMode = localStorage.getItem("pathwarden_demo_mode");
     if (savedMode !== null) {
       setIsDemoMode(savedMode === "true");
@@ -137,6 +154,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         checkBackendHealth,
         selectedIncidentId,
         setSelectedIncidentId,
+        incidentCount,
       }}
     >
       {children}
