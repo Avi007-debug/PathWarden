@@ -153,6 +153,7 @@ def get_system_status():
         "memory_usage_pct": min(100.0, round((metrics.memory_used_gb / settings.max_memory_gb) * 100, 1)),
         "cpu_usage_pct": round(metrics.cpu_percent, 1),
         "storage_engine": "DuckDB 2.0 + Parquet",
+        "engine_mode": "DUCKDB_PARQUET_OUT_OF_CORE",
         "total_events_ingested": total_events,
         "active_incidents": active_incidents,
         "current_run_id": active_run,

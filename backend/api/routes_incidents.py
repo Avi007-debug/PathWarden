@@ -19,6 +19,8 @@ from fastapi import APIRouter, HTTPException, Query
 
 from common.logger import get_logger
 from config.settings import settings
+from correlation.fp_verifier import fp_verifier
+from detection.network_threat_monitor import network_threat_monitor
 
 logger = get_logger("API.Incidents")
 
@@ -54,21 +56,25 @@ def list_incidents(
     severity: Optional[str] = Query(None),
 ):
     """List correlated incident summaries (paginated, from Parquet or demo fallback)."""
+    lim = limit if isinstance(limit, int) else 50
+    off = offset if isinstance(offset, int) else 0
+    sev = severity if isinstance(severity, str) else None
+
     if not _has_incidents():
         incidents = _demo_incident_list()
-        if severity:
-            incidents = [i for i in incidents if i.get("severity") == severity]
-        return incidents[offset : offset + limit]
+        if sev:
+            incidents = [i for i in incidents if i.get("severity") == sev]
+        return incidents[off : off + lim]
 
     inc_glob = os.path.join(_DATA_DIR, "incidents", "*.parquet").replace("\\", "/")
     con = _get_con()
     try:
         con.execute(f"CREATE VIEW raw_incidents AS SELECT * FROM read_parquet('{inc_glob}')")
-        where = f"WHERE severity = '{severity}'" if severity else ""
+        where = f"WHERE severity = '{sev}'" if sev else ""
         rows = con.execute(
             f"""SELECT * FROM raw_incidents {where}
                 ORDER BY start_time DESC
-                LIMIT {limit} OFFSET {offset}"""
+                LIMIT {lim} OFFSET {off}"""
         ).fetchall()
         cols = [desc[0] for desc in con.description]
         con.close()
@@ -139,6 +145,9 @@ def get_incident(incident_id: str):
     graph_data = _fetch_graph_data(incident_id)
     d["steps"] = graph_data["steps"]
     d["edges"] = graph_data["edges"]
+    d["fp_verification"] = fp_verifier.verify_incident(
+        d["steps"], d["edges"], d["hosts_involved"]
+    ).to_dict()
 
     return d
 
@@ -205,6 +214,8 @@ def _fetch_graph_data(incident_id: str) -> dict:
         sd["kc_confidence"] = 0.95
         sd["detection_confidence"] = 0.95
         sd["dq_flags"] = ["TIMESTAMP_UNCERTAIN"] if sd.get("is_uncertain") else []
+        threat = network_threat_monitor.analyze_step_telemetry(sd)
+        sd["network_threat"] = threat.to_dict() if threat else None
         steps_out.append(sd)
 
     edges_out = []
@@ -257,6 +268,23 @@ def _demo_incident_list() -> List[dict]:
             "is_planted_match": True,
             "observed_reachability_count": 3,
             "potential_reachability_count": 5,
+            "fp_verification": {
+                "verdict": "CONFIRMED_MALICIOUS_ATTACK",
+                "attack_confidence": 0.94,
+                "false_positive_risk": 0.06,
+                "corroboration_score": 0.95,
+                "is_admin_tool_signature": False,
+                "objective_achieved": True,
+                "multi_stage_depth": 7,
+                "explanation_points": [
+                    "Multi-sensor corroboration: Confirmed across Sysmon Telemetry, Windows Security Event Log, and Zeek Network Monitor.",
+                    "Multi-host intrusion: Activity spans 3 distinct endpoints (DC01.CORP.LOCAL, SRV-APP-PROD01, WS-EXEC-04).",
+                    "Causal graph integrity: Reconstructed with 7 causal progression edges.",
+                    "Adversarial objective verified: Credential Dumping / Memory Extraction (LSASS/NTDS).",
+                    "Adversarial objective verified: Lateral Execution Tooling (Pass-the-Hash & Remote Service).",
+                    "Zero benign administration match: Process hierarchy and execution arguments diverge completely from corporate deployment baselines."
+                ]
+            },
             "dq_caveats": [
                 {
                     "type": "TIMESTAMP_UNCERTAIN",
@@ -298,6 +326,20 @@ def _demo_incident_list() -> List[dict]:
             "is_planted_match": True,
             "observed_reachability_count": 2,
             "potential_reachability_count": 3,
+            "fp_verification": {
+                "verdict": "CONFIRMED_MALICIOUS_ATTACK",
+                "attack_confidence": 0.89,
+                "false_positive_risk": 0.11,
+                "corroboration_score": 0.88,
+                "is_admin_tool_signature": False,
+                "objective_achieved": True,
+                "multi_stage_depth": 4,
+                "explanation_points": [
+                    "Multi-host intrusion: Activity spans 2 distinct endpoints (SRV-FILE-BACKUP, WS-FIN-09).",
+                    "Adversarial objective verified: Defense Evasion / Shadow Copy Deletion (vssadmin/wevtutil).",
+                    "Zero benign administration match: Destructive shadow volume deletion executed silently."
+                ]
+            },
             "dq_caveats": [
                 {
                     "type": "CLOCK_SKEW_DETECTED",
@@ -333,6 +375,19 @@ def _demo_incident_list() -> List[dict]:
             "is_planted_match": True,
             "observed_reachability_count": 1,
             "potential_reachability_count": 2,
+            "fp_verification": {
+                "verdict": "SUSPICIOUS_UNVERIFIED",
+                "attack_confidence": 0.76,
+                "false_positive_risk": 0.24,
+                "corroboration_score": 0.65,
+                "is_admin_tool_signature": False,
+                "objective_achieved": False,
+                "multi_stage_depth": 3,
+                "explanation_points": [
+                    "Single sensor telemetry: Grounded in container audit logs.",
+                    "Indeterminate activity: Suspicious secret harvesting commands observed, awaiting outbound destination confirmation."
+                ]
+            },
             "dq_caveats": []
         },
         {
@@ -361,6 +416,20 @@ def _demo_incident_list() -> List[dict]:
             "is_planted_match": False,
             "observed_reachability_count": 1,
             "potential_reachability_count": 1,
+            "fp_verification": {
+                "verdict": "BENIGN_ADMIN_ACTIVITY",
+                "attack_confidence": 0.14,
+                "false_positive_risk": 0.86,
+                "corroboration_score": 0.30,
+                "is_admin_tool_signature": True,
+                "objective_achieved": False,
+                "multi_stage_depth": 1,
+                "explanation_points": [
+                    "High False Positive Risk: Matches verified administrative deployment tool signature (backup service pre-auth retry) without adversarial persistence.",
+                    "No credential dumping or system tampering objective verified in sequence.",
+                    "Discounted by Anti-Hub filter."
+                ]
+            },
             "dq_caveats": []
         }
     ]
@@ -373,8 +442,12 @@ def _demo_incident_detail(incident_id: str) -> dict:
         found = incidents[0]
 
     graph = _demo_graph(incident_id)
+    fp_res = fp_verifier.verify_incident(
+        graph["steps"], graph["edges"], found.get("hosts_involved", [])
+    )
     return {
         **found,
+        "fp_verification": fp_res.to_dict(),
         "steps": graph["steps"],
         "edges": graph["edges"],
     }
@@ -712,5 +785,10 @@ def _demo_graph(incident_id: str) -> dict:
             "latency_seconds": 1423
         }
     ]
+
+    for step in steps:
+        if "network_threat" not in step or step["network_threat"] is None:
+            threat = network_threat_monitor.analyze_step_telemetry(step)
+            step["network_threat"] = threat.to_dict() if threat else None
 
     return {"incident_id": incident_id, "steps": steps, "edges": edges}
