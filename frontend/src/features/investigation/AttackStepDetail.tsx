@@ -11,6 +11,7 @@ import {
   Terminal,
   FileSearch,
   AlertTriangle,
+  Globe,
   X,
 } from "lucide-react";
 
@@ -98,6 +99,61 @@ export function AttackStepDetail({
             </span>
           </div>
         </div>
+
+        {/* Network Threat & Malicious Destination */}
+        {step.network_threat && (
+          <div className="p-3 bg-red-500/10 border-2 border-red-500/50 shadow-[2px_2px_0px_#FF334B] flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase font-black text-[#FF334B] flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5" />
+                {"// NETWORK THREAT DETECTED"}
+              </span>
+              <Badge variant="critical">
+                {step.network_threat.threat_category || "SUSPICIOUS_OUTBOUND"}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-[10px] mt-1 font-mono">
+              {step.network_threat.destination_ip && (
+                <div>
+                  <span className="text-[var(--text-dim)] uppercase block">Destination IP</span>
+                  <span className="text-[var(--text-primary)] font-bold">
+                    {step.network_threat.destination_ip}:{step.network_threat.destination_port || 443}
+                  </span>
+                </div>
+              )}
+              {step.network_threat.destination_domain && (
+                <div>
+                  <span className="text-[var(--text-dim)] uppercase block">Target Domain / Host</span>
+                  <span className="text-[#00C8FF] font-bold truncate block">
+                    {step.network_threat.destination_domain}
+                  </span>
+                </div>
+              )}
+              {step.network_threat.network_protocol && (
+                <div>
+                  <span className="text-[var(--text-dim)] uppercase block">Protocol / Direction</span>
+                  <span className="text-[var(--text-primary)] font-bold">
+                    {step.network_threat.network_protocol} ({step.network_threat.direction || "OUTBOUND"})
+                  </span>
+                </div>
+              )}
+              {step.network_threat.threat_confidence && (
+                <div>
+                  <span className="text-[var(--text-dim)] uppercase block">Threat Confidence</span>
+                  <span className="text-[#86D400] dark:text-[#B7FF3C] font-bold">
+                    {Math.round(step.network_threat.threat_confidence * 100)}%
+                  </span>
+                </div>
+              )}
+            </div>
+            {step.network_threat.command_snippet && (
+              <div className="mt-1 pt-1.5 border-t border-red-500/30 text-[10px] text-[var(--text-muted)] truncate">
+                <span className="text-[var(--text-dim)] font-bold">Payload Request: </span>
+                {step.network_threat.command_snippet}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Data Quality Caveats */}
         {step.dq_flags && step.dq_flags.length > 0 && (
