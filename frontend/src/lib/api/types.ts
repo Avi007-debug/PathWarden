@@ -134,6 +134,28 @@ export interface MitreAttackRef {
   sub_technique_id?: string | null;
 }
 
+export interface NetworkThreatInfo {
+  destination_ip?: string | null;
+  destination_port?: number | null;
+  destination_domain?: string | null;
+  network_protocol?: string | null;
+  threat_category?: string | null;
+  threat_confidence?: number | null;
+  direction?: "OUTBOUND" | "INBOUND" | "LATERAL" | string | null;
+  command_snippet?: string | null;
+}
+
+export interface FPVerification {
+  verdict: "CONFIRMED_MALICIOUS_ATTACK" | "BENIGN_ADMIN_ACTIVITY" | "SUSPICIOUS_UNVERIFIED";
+  attack_confidence: number;
+  false_positive_risk: number;
+  corroboration_score: number;
+  is_admin_tool_signature: boolean;
+  objective_achieved: boolean;
+  multi_stage_depth: number;
+  explanation_points: string[];
+}
+
 export interface AttackStep {
   step_uid: string;
   incident_id: string;
@@ -158,6 +180,7 @@ export interface AttackStep {
   evidence_event_uids: string[];
   is_uncertain?: boolean;
   dq_flags?: DataQualityFlag[];
+  network_threat?: NetworkThreatInfo | null;
 }
 
 export type EdgeRelationshipType =
@@ -209,6 +232,7 @@ export interface Incident {
   summary: string;
   planted_attack_id?: string;
   is_planted_match?: boolean;
+  fp_verification?: FPVerification | null;
 }
 
 export interface IncidentDetail extends Incident {
