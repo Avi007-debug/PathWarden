@@ -17,7 +17,7 @@ export function StageLatencyBreakdown({ stages }: StageLatencyBreakdownProps) {
           Stage-Level Latency & Throughput Breakdown
         </h3>
         <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase bg-[var(--bg-surface)] px-2 py-0.5 border border-[var(--border-color)]">
-          8 Pipeline Stages
+          {stages?.length || 5} Pipeline Stages
         </span>
       </div>
 
