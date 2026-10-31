@@ -24,6 +24,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from .incident_clusterer import IncidentCluster
 from .relationship_scorer import ScoredRelationship
+from detection.network_threat_monitor import network_threat_monitor, NetworkThreatInfo
 from common.enums import EvidenceStatus
 from common.logger import get_logger
 
@@ -56,6 +57,7 @@ class AttackStep:
     evidence_ids: List[str] = field(default_factory=list)
     is_uncertain: bool = False
     uncertainty_reason: Optional[str] = None
+    network_threat: Optional[NetworkThreatInfo] = None
 
 
 @dataclass
@@ -143,6 +145,7 @@ class PathReconstructor:
                 evidence_ids=self._parse_evidence_ids(row.get("evidence_ids")),
                 is_uncertain=is_uncertain,
                 uncertainty_reason=uncertainty_reason,
+                network_threat=network_threat_monitor.analyze_step_telemetry(row),
             )
             steps.append(step)
 
