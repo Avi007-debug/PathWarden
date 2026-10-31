@@ -119,6 +119,15 @@ class NetworkAdapter:
         action     = _ACTION_NORM.get(raw_action) or (raw_action or None)
         outcome    = _ACTION_TO_OUTCOME.get(raw_action)  # None if unrecognised
 
+        # FortiGate auth events use action="login" with a separate status field.
+        # Override outcome from explicit status when action alone does not tell us.
+        if outcome is None:
+            raw_status = str(parsed.get("status") or "").lower()
+            if raw_status in ("failed", "failure", "denied"):
+                outcome = "FAILURE"
+            elif raw_status in ("success", "succeeded", "allowed"):
+                outcome = "SUCCESS"
+
         # ── Host and User ─────────────────────────────────────────────────────
         host_name  = parsed.get("host_name") or parsed.get("device") or parsed.get("host")
         user_name  = parsed.get("user_name") or parsed.get("user") or parsed.get("username")
@@ -139,7 +148,7 @@ class NetworkAdapter:
             "src_ip", "dst_ip", "src_port", "dst_port",
             "network_protocol", "proto", "action", "verdict",
             "host_name", "device", "host", "user_name", "user", "username",
-            "sensor_id", "collector", "agent", "parse_status", "raw_line",
+            "sensor_id", "collector", "agent", "parse_status", "raw_line", "status",
         }
         for k, v in parsed.items():
             if k not in known_keys and v is not None:

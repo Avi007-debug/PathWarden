@@ -106,8 +106,15 @@ _KV_ALIASES: Dict[str, str] = {
     "user"     : "user_name",
     "username" : "user_name",
     "host"     : "host_name",
-    "hostname" : "host_name",
+    # Note: "hostname" is NOT aliased here — in FortiGate logs it means
+    # destination domain (SNI), not the device name. devname handles the device.
     "device"   : "host_name",
+    # FortiGate / Fortinet specific
+    "devname"  : "host_name",
+    "devid"    : "sensor_id",
+    "sessionid": "session_id",
+    "srccountry": "src_country",
+    "dstcountry": "dst_country",
 }
 
 
@@ -180,6 +187,21 @@ class TextParser(BaseParser):
                 "dst_port"         : m.group("dst_port"),
                 "parse_status"     : ParseStatus.PARSED.value,
             }
+
+        # ── Try Pattern 5: Pure key=value (no timestamp prefix) ──────────────
+        # Covers FortiGate / Fortinet logs and similar where every field,
+        # including date and time, appears as a key=value pair:
+        #   date=2026-10-23 time=08:48:26 srcip=10.0.0.1 dstip=8.8.8.8 ...
+        kv = self._extract_kv(line)
+        if kv and len(kv) >= 3:
+            # Reconstruct timestamp from date + time KV keys (FortiGate style)
+            date_val = kv.pop("date", None)
+            time_val = kv.pop("time", None)
+            if date_val and time_val:
+                kv["event_ts_original"] = f"{date_val} {time_val}"
+            result = {"parse_status": ParseStatus.PARSED.value}
+            result.update(kv)
+            return result
 
         # ── Fallback: store raw line for quarantine ───────────────────────────
         # We do NOT raise an exception — malformed lines are counted and stored
