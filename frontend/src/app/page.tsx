@@ -14,6 +14,7 @@ import { RecentIncidentsTable } from "@/features/overview/RecentIncidentsTable";
 import { DatasetHealthWidget } from "@/features/overview/DatasetHealthWidget";
 import { RunAnalysisModal } from "@/features/overview/RunAnalysisModal";
 import { Button } from "@/components/ui/Button";
+import { Footer } from "@/components/layout/Footer";
 import {
   PlayCircle,
   RefreshCw,
@@ -55,8 +56,9 @@ export default function OverviewDashboardPage() {
   const attackStepsCount = dqReport?.total_attack_steps || 84;
 
   return (
-    <div className="flex-1 p-6 flex flex-col gap-6 max-w-7xl mx-auto w-full font-mono">
-      {/* Overview Header & Actions */}
+    <div className="flex-1 flex flex-col justify-between min-h-full">
+      <div className="p-6 flex flex-col gap-6 max-w-7xl mx-auto w-full font-mono flex-1">
+        {/* Overview Header & Actions */}
       <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[var(--border-color)]">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -171,8 +173,10 @@ export default function OverviewDashboardPage() {
         </>
       )}
 
-      {/* Ingestion & Analysis Run Modal */}
-      <RunAnalysisModal isOpen={runModalOpen} onClose={() => setRunModalOpen(false)} />
+        {/* Ingestion & Analysis Run Modal */}
+        <RunAnalysisModal isOpen={runModalOpen} onClose={() => setRunModalOpen(false)} />
+      </div>
+      <Footer />
     </div>
   );
 }

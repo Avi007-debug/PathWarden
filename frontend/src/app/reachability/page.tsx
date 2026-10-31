@@ -9,6 +9,7 @@ import { ReachabilityTable } from "@/features/reachability/ReachabilityTable";
 import { EvidenceDrawer } from "@/features/investigation/EvidenceDrawer";
 import { Radio, RefreshCw, Filter } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Footer } from "@/components/layout/Footer";
 
 export default function ReachabilityPage() {
   const { isDemoMode, selectedIncidentId } = useApp();
@@ -64,8 +65,9 @@ export default function ReachabilityPage() {
   };
 
   return (
-    <div className="flex-1 p-6 flex flex-col gap-6 max-w-7xl mx-auto w-full font-mono select-none">
-      {/* Page Header */}
+    <div className="flex-1 flex flex-col justify-between min-h-full">
+      <div className="p-6 flex flex-col gap-6 max-w-7xl mx-auto w-full font-mono select-none flex-1">
+        {/* Page Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b-2 border-[var(--border-color)]">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -125,13 +127,15 @@ export default function ReachabilityPage() {
         <ReachabilityTable items={filteredItems} onInspectEvidence={handleInspectEvidence} />
       )}
 
-      {/* Evidence Drawer */}
-      <EvidenceDrawer
-        isOpen={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        selectedStep={null}
-        selectedEdge={mockEdge}
-      />
+        {/* Evidence Drawer */}
+        <EvidenceDrawer
+          isOpen={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          selectedStep={null}
+          selectedEdge={mockEdge}
+        />
+      </div>
+      <Footer />
     </div>
   );
 }

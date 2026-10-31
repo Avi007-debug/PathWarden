@@ -8,6 +8,7 @@ import { IncidentFilters } from "@/features/incidents/IncidentFilters";
 import { IncidentTable } from "@/features/incidents/IncidentTable";
 import { ShieldAlert, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Footer } from "@/components/layout/Footer";
 
 export default function IncidentsPage() {
   const { isDemoMode } = useApp();
@@ -63,8 +64,9 @@ export default function IncidentsPage() {
   });
 
   return (
-    <div className="flex-1 p-6 flex flex-col gap-5 max-w-7xl mx-auto w-full font-mono select-none">
-      {/* Page Title & Controls */}
+    <div className="flex-1 flex flex-col justify-between min-h-full">
+      <div className="p-6 flex flex-col gap-5 max-w-7xl mx-auto w-full font-mono select-none flex-1">
+        {/* Page Title & Controls */}
       <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b-2 border-[var(--border-color)]">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -105,19 +107,21 @@ export default function IncidentsPage() {
         }}
       />
 
-      {/* Table Display */}
-      {loading ? (
-        <div className="p-12 border-2 border-[var(--border-color)] bg-[var(--bg-surface)] shadow-[4px_4px_0px_var(--border-color)] text-center text-xs text-[var(--text-muted)] font-bold">
-          <div className="w-6 h-6 border-2 border-[#00C8FF] border-t-transparent animate-spin mx-auto mb-2" />
-          <span>QUERYING CORRELATED INCIDENT CLUSTERS...</span>
-        </div>
-      ) : error ? (
-        <div className="p-6 border-2 border-red-500 bg-red-500/10 text-red-400 text-xs font-bold shadow-[4px_4px_0px_#FF334B]">
-          Failed to load incidents: {error}
-        </div>
-      ) : (
-        <IncidentTable incidents={filteredIncidents} />
-      )}
+        {/* Table Display */}
+        {loading ? (
+          <div className="p-12 border-2 border-[var(--border-color)] bg-[var(--bg-surface)] shadow-[4px_4px_0px_var(--border-color)] text-center text-xs text-[var(--text-muted)] font-bold">
+            <div className="w-6 h-6 border-2 border-[#00C8FF] border-t-transparent animate-spin mx-auto mb-2" />
+            <span>QUERYING CORRELATED INCIDENT CLUSTERS...</span>
+          </div>
+        ) : error ? (
+          <div className="p-6 border-2 border-red-500 bg-red-500/10 text-red-400 text-xs font-bold shadow-[4px_4px_0px_#FF334B]">
+            Failed to load incidents: {error}
+          </div>
+        ) : (
+          <IncidentTable incidents={filteredIncidents} />
+        )}
+      </div>
+      <Footer />
     </div>
   );
 }

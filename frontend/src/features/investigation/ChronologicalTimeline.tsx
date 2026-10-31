@@ -112,6 +112,12 @@ export function ChronologicalTimeline({
           );
         })}
       </div>
+
+      {/* Timeline Footer / End of Sequence Marker */}
+      <div className="p-2.5 border-t-2 border-[var(--border-color)] bg-[var(--bg-surface-elevated)] shrink-0 flex items-center justify-between text-[10px] text-[var(--text-dim)] font-bold">
+        <span>{"// END OF ATTACK PATH"}</span>
+        <span className="text-[#86D400] dark:text-[#B7FF3C]">ALL STEPS CORRELATED</span>
+      </div>
     </div>
   );
 }
