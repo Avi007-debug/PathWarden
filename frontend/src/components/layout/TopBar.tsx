@@ -55,7 +55,7 @@ export function TopBar() {
           <div className="h-6 w-[2px] bg-[var(--border-color)] hidden md:block" />
 
           {/* Workspace & Dataset Context Chips with hard borders */}
-          <div className="hidden lg:flex items-center gap-2.5 text-xs font-mono">
+          <div className="hidden xl:flex items-center gap-2.5 text-xs font-mono">
             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-[var(--bg-surface-elevated)] border-2 border-[var(--border-color)] text-[var(--text-muted)] shadow-[2px_2px_0px_var(--border-color)]">
               <Layers className="w-3.5 h-3.5 text-[#00C8FF]" />
               <span className="text-[var(--text-primary)] font-bold">SimEDR Enclave</span>

@@ -3,7 +3,19 @@
 import React, { useEffect, useRef, useState } from "react";
 import cytoscape, { Core, EventObject } from "cytoscape";
 import dagre from "cytoscape-dagre";
-import { ZoomIn, ZoomOut, Maximize2, Minimize2, Focus, RotateCcw, ALargeSmall } from "lucide-react";
+import {
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Minimize2,
+  Focus,
+  RotateCcw,
+  ALargeSmall,
+  PanelRightClose,
+  PanelRightOpen,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { AttackStep, AttackEdge } from "@/lib/api/types";
 import { getCytoscapeStyles, TextScale } from "@/lib/utils/cytoscape-theme";
 import { useApp } from "@/lib/context/AppContext";
@@ -25,6 +37,8 @@ interface AttackGraphViewProps {
   selectedEdgeId: string | null;
   onSelectStep: (step: AttackStep | null) => void;
   onSelectEdge: (edge: AttackEdge | null) => void;
+  isTimelineOpen?: boolean;
+  onToggleTimeline?: () => void;
 }
 
 export function AttackGraphView({
@@ -34,12 +48,28 @@ export function AttackGraphView({
   selectedEdgeId,
   onSelectStep,
   onSelectEdge,
+  isTimelineOpen,
+  onToggleTimeline,
 }: AttackGraphViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
   const { theme } = useApp();
   const [layoutName, setLayoutName] = useState<"dagre" | "breadthfirst" | "cose">("dagre");
   const [textScale, setTextScale] = useState<TextScale>("standard");
+  const [legendMinimized, setLegendMinimized] = useState<boolean>(false);
+
+  // Safe graph auto-fit helper that preserves node readability and avoids giant over-zoomed nodes
+  const fitGraph = React.useCallback((padding = 35) => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    cy.resize();
+    cy.fit(undefined, padding);
+    // If graph has few nodes, cy.fit() can zoom excessively; clamp max zoom to 1.15
+    if (cy.zoom() > 1.15) {
+      cy.zoom(1.15);
+      cy.center();
+    }
+  }, []);
 
   // Load saved text scale
   useEffect(() => {
@@ -54,8 +84,48 @@ export function AttackGraphView({
     localStorage.setItem("pathwarden_graph_text_scale", scale);
     if (cyRef.current) {
       cyRef.current.style(getCytoscapeStyles(theme, scale)).update();
+      fitGraph(35);
     }
   };
+
+  // ResizeObserver to automatically resize & re-fit Cytoscape whenever container size changes (enlarge or short back)
+  useEffect(() => {
+    if (!containerRef.current) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const ro = new ResizeObserver(() => {
+      if (cyRef.current) {
+        cyRef.current.resize();
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          fitGraph(35);
+        }, 80);
+      }
+    });
+    ro.observe(containerRef.current);
+    return () => {
+      clearTimeout(timer);
+      ro.disconnect();
+    };
+  }, [fitGraph]);
+
+  // Window resize handler (handles window un-maximize and browser zoom changes)
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const onResize = () => {
+      if (cyRef.current) {
+        cyRef.current.resize();
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          fitGraph(35);
+        }, 80);
+      }
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [fitGraph]);
 
   // Initialize and update Cytoscape graph
   useEffect(() => {
@@ -93,16 +163,25 @@ export function AttackGraphView({
         name: layoutName,
         // @ts-expect-error dagre options
         rankDir: "LR",
-        nodeSep: 60,
-        rankSep: 100,
+        nodeSep: 45,
+        rankSep: 70,
         directed: true,
-        padding: 50,
+        padding: 35,
+        fit: true,
       },
-      minZoom: 0.3,
+      minZoom: 0.2,
       maxZoom: 2.5,
     });
 
     cyRef.current = cy;
+
+    cy.ready(() => {
+      fitGraph(35);
+    });
+
+    cy.on("layoutstop", () => {
+      fitGraph(35);
+    });
 
     // Node selection
     cy.on("tap", "node", (evt: EventObject) => {
@@ -211,16 +290,17 @@ export function AttackGraphView({
     };
   }, [isFullscreen]);
 
-  // When fullscreen changes, resize and fit cytoscape
+  // When fullscreen changes (enlarged or shorted back), re-fit cytoscape with staggered timers
+  // to catch the full browser exit animation window (0ms -> 500ms)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (cyRef.current) {
-        cyRef.current.resize();
-        cyRef.current.fit(undefined, 50);
-      }
-    }, 150);
-    return () => clearTimeout(timer);
-  }, [isFullscreen]);
+    const timers = [
+      setTimeout(() => fitGraph(35), 50),
+      setTimeout(() => fitGraph(35), 180),
+      setTimeout(() => fitGraph(35), 350),
+      setTimeout(() => fitGraph(35), 500),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [isFullscreen, fitGraph]);
 
   const handleZoomIn = () => {
     cyRef.current?.zoom(cyRef.current.zoom() * 1.25);
@@ -231,12 +311,14 @@ export function AttackGraphView({
   };
 
   const handleFit = () => {
-    cyRef.current?.fit(undefined, 40);
+    fitGraph(35);
   };
 
   const handleReset = () => {
-    cyRef.current?.reset();
-    cyRef.current?.fit(undefined, 40);
+    if (cyRef.current) {
+      cyRef.current.reset();
+      fitGraph(35);
+    }
   };
 
   return (
@@ -246,11 +328,11 @@ export function AttackGraphView({
         "relative bg-[var(--bg-main)] border-2 border-[var(--border-color)] overflow-hidden flex flex-col select-none transition-all duration-200",
         isFullscreen
           ? "fixed inset-0 z-50 w-screen h-screen m-0 p-0 rounded-none shadow-none border-0"
-          : "w-full h-full min-h-[460px] shadow-[4px_4px_0px_var(--border-color)]"
+          : "w-full h-full min-h-[300px] flex-1 min-h-0 shadow-[4px_4px_0px_var(--border-color)]"
       )}
     >
       {/* Blueprint Coordinates Watermark */}
-      <div className="absolute top-3 right-3 z-10 font-mono text-[10px] text-[var(--text-dim)] uppercase tracking-widest pointer-events-none">
+      <div className="absolute top-2.5 right-3 z-10 font-mono text-[9px] text-[var(--text-dim)] uppercase tracking-widest pointer-events-none hidden sm:block">
         DAG_GRAPH // {steps.length} NODES // {edges.length} EDGES
       </div>
 
@@ -266,7 +348,7 @@ export function AttackGraphView({
       )}
 
       {/* Top Graph Controls Bar */}
-      <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1 shadow-[3px_3px_0px_var(--border-color)]">
+      <div className="absolute top-2.5 left-2.5 z-10 flex flex-wrap items-center gap-1 bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1 shadow-[3px_3px_0px_var(--border-color)] max-w-[calc(100%-20px)]">
         <button
           onClick={handleZoomIn}
           className="p-1.5 text-[var(--text-muted)] hover:text-[#00C8FF] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] transition-all cursor-pointer"
@@ -308,69 +390,109 @@ export function AttackGraphView({
           <RotateCcw className="w-3.5 h-3.5" />
         </button>
 
-        <div className="h-5 w-[2px] bg-[var(--border-color)] mx-1" />
+        <div className="h-4 w-[2px] bg-[var(--border-color)] mx-0.5" />
 
         {/* Layout Toggle */}
         <select
           value={layoutName}
           onChange={(e) => setLayoutName(e.target.value as "dagre" | "breadthfirst" | "cose")}
-          className="bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] font-mono text-[11px] font-bold px-2 py-1 border border-[var(--border-color)] outline-none cursor-pointer"
+          className="bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] font-mono text-[10px] font-bold px-1.5 py-1 border border-[var(--border-color)] outline-none cursor-pointer"
+          title="Graph Layout Algorithm"
         >
-          <option value="dagre">HIERARCHICAL (DAGRE LR)</option>
-          <option value="breadthfirst">BREADTH-FIRST TREE</option>
-          <option value="cose">FORCE-DIRECTED (COSE)</option>
+          <option value="dagre">DAGRE (LR)</option>
+          <option value="breadthfirst">TREE</option>
+          <option value="cose">FORCE</option>
         </select>
 
-        <div className="h-5 w-[2px] bg-[var(--border-color)] mx-1" />
-
         {/* Text Scale / Enlargement Option */}
-        <div className="flex items-center gap-1 bg-[var(--bg-surface-elevated)] border border-[var(--border-color)] px-1.5 py-1" title="Graph Node & Edge Text Size">
-          <ALargeSmall className="w-3.5 h-3.5 text-[#00C8FF]" />
+        <div className="flex items-center gap-1 bg-[var(--bg-surface-elevated)] border border-[var(--border-color)] px-1 py-0.5" title="Graph Node & Edge Text Size">
+          <ALargeSmall className="w-3 h-3 text-[#00C8FF]" />
           <select
             value={textScale}
             onChange={(e) => handleTextScaleChange(e.target.value as TextScale)}
-            className="bg-transparent text-[var(--text-primary)] font-mono text-[11px] font-bold outline-none cursor-pointer"
+            className="bg-transparent text-[var(--text-primary)] font-mono text-[10px] font-bold outline-none cursor-pointer"
           >
-            <option value="standard">FONT: STD (13px)</option>
-            <option value="large">FONT: ENLARGED (15px)</option>
-            <option value="xlarge">FONT: MAXIMUM (17px)</option>
+            <option value="standard">FONT: STD</option>
+            <option value="large">FONT: LG</option>
+            <option value="xlarge">FONT: XL</option>
           </select>
         </div>
+
+        {/* Toggle Timeline Rail Button */}
+        {onToggleTimeline && (
+          <>
+            <div className="h-4 w-[2px] bg-[var(--border-color)] mx-0.5 hidden lg:block" />
+            <button
+              onClick={onToggleTimeline}
+              className={cn(
+                "hidden lg:flex items-center gap-1 px-1.5 py-1 text-[10px] font-mono font-bold uppercase transition-all cursor-pointer border",
+                isTimelineOpen
+                  ? "bg-[#2563FF] text-white border-black"
+                  : "bg-[var(--bg-surface-elevated)] text-[var(--text-muted)] border-[var(--border-color)] hover:text-[#00C8FF]"
+              )}
+              title={isTimelineOpen ? "Hide Timeline Pane" : "Show Timeline Pane"}
+            >
+              {isTimelineOpen ? <PanelRightClose className="w-3 h-3" /> : <PanelRightOpen className="w-3 h-3" />}
+              <span>{isTimelineOpen ? "TIMELINE" : "SHOW RAIL"}</span>
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Graph Legend Overlay */}
-      <div className="absolute bottom-3 left-3 z-10 bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-3 shadow-[3px_3px_0px_var(--border-color)] text-[10px] font-mono flex flex-col gap-1.5 max-w-xs">
-        <span className="font-extrabold uppercase tracking-wider text-[var(--text-dim)] pb-1 border-b border-[var(--border-subtle)]">
-          {"// GRAPH LEGEND"}
-        </span>
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5 font-bold">
-            <span className="w-2.5 h-2.5 border-2 border-[#FF334B] bg-[#FF334B]/30" />
-            Critical Step
-          </span>
-          <span className="flex items-center gap-1.5 font-bold">
-            <span className="w-2.5 h-2.5 border-2 border-[#FF8800] bg-[#FF8800]/30" />
-            High Step
-          </span>
-          <span className="flex items-center gap-1.5 font-bold">
-            <span className="w-2.5 h-2.5 border-2 border-[#FFB800] bg-[#FFB800]/30" />
-            Medium
-          </span>
-        </div>
-        <div className="flex items-center gap-3 pt-0.5">
-          <span className="flex items-center gap-1.5 font-bold text-[#00C8FF]">
-            <span className="w-4 h-1 bg-[#00C8FF]" />
-            Causal Link
-          </span>
-          <span className="flex items-center gap-1.5 font-bold text-amber-500">
-            <span className="w-4 h-1 border-t-2 border-dashed border-[#FFB800]" />
-            Inferred Link
-          </span>
-        </div>
+      {/* Graph Legend Overlay with Collapse Toggle */}
+      <div className="absolute bottom-2.5 left-2.5 z-10 font-mono text-[10px] transition-all">
+        {legendMinimized ? (
+          <button
+            onClick={() => setLegendMinimized(false)}
+            className="flex items-center gap-1 px-2 py-1 bg-[var(--bg-surface)] border-2 border-[var(--border-color)] shadow-[2px_2px_0px_var(--border-color)] font-bold text-[var(--text-dim)] hover:text-[#00C8FF] cursor-pointer"
+          >
+            <span>// LEGEND</span>
+            <ChevronUp className="w-3 h-3" />
+          </button>
+        ) : (
+          <div className="bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2.5 shadow-[3px_3px_0px_var(--border-color)] flex flex-col gap-1.5 max-w-[280px]">
+            <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)]">
+              <span className="font-extrabold uppercase tracking-wider text-[var(--text-dim)] text-[9px]">
+                {"// GRAPH LEGEND"}
+              </span>
+              <button
+                onClick={() => setLegendMinimized(true)}
+                className="text-[var(--text-dim)] hover:text-[var(--text-primary)] cursor-pointer p-0.5"
+                title="Minimize Legend"
+              >
+                <ChevronDown className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap text-[9px]">
+              <span className="flex items-center gap-1 font-bold">
+                <span className="w-2 h-2 border border-[#FF334B] bg-[#FF334B]/30" />
+                Critical
+              </span>
+              <span className="flex items-center gap-1 font-bold">
+                <span className="w-2 h-2 border border-[#FF8800] bg-[#FF8800]/30" />
+                High
+              </span>
+              <span className="flex items-center gap-1 font-bold">
+                <span className="w-2 h-2 border border-[#FFB800] bg-[#FFB800]/30" />
+                Medium
+              </span>
+            </div>
+            <div className="flex items-center gap-3 pt-0.5 text-[9px]">
+              <span className="flex items-center gap-1 font-bold text-[#00C8FF]">
+                <span className="w-3 h-0.5 bg-[#00C8FF]" />
+                Causal
+              </span>
+              <span className="flex items-center gap-1 font-bold text-amber-500">
+                <span className="w-3 h-0.5 border-t border-dashed border-[#FFB800]" />
+                Inferred
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Interactive Cytoscape Canvas Container */}
-      <div ref={containerRef} className="w-full h-full flex-1" />
+      <div ref={containerRef} className="w-full h-full flex-1 min-h-0" />
     </div>
   );
 }

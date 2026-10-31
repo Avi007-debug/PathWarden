@@ -12,7 +12,7 @@ export function Breadcrumbs() {
   const segments = pathname.split("/").filter(Boolean);
 
   return (
-    <nav className="flex items-center gap-1.5 text-xs font-mono text-[var(--text-muted)] py-1">
+    <nav className="hidden md:flex items-center gap-1.5 text-xs font-mono text-[var(--text-muted)] py-1">
       <Link
         href="/"
         className="flex items-center gap-1 hover:text-[#00C8FF] transition-colors"

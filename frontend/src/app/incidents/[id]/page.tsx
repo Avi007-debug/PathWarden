@@ -25,6 +25,8 @@ function IncidentInvestigationContent() {
   const [selectedStep, setSelectedStep] = useState<AttackStep | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<AttackEdge | null>(null);
   const [evidenceDrawerOpen, setEvidenceDrawerOpen] = useState(false);
+  const [headerExpanded, setHeaderExpanded] = useState(false);
+  const [isTimelineOpen, setIsTimelineOpen] = useState(true);
 
   // Tab switch for mobile
   const [activeTab, setActiveTab] = useState<"graph" | "timeline">("graph");
@@ -101,12 +103,16 @@ function IncidentInvestigationContent() {
   }
 
   return (
-    <div className="flex flex-col flex-1 h-full overflow-hidden">
-      {/* Top Incident Summary Bar */}
-      <InvestigationHeader incident={incident} />
+    <div className="flex flex-col flex-1 h-full min-h-0 overflow-hidden">
+      {/* Top Incident Summary Bar (Collapsible to maximize graph workspace) */}
+      <InvestigationHeader
+        incident={incident}
+        isExpanded={headerExpanded}
+        onToggleExpanded={() => setHeaderExpanded(!headerExpanded)}
+      />
 
       {/* Mobile Tab Switcher */}
-      <div className="flex lg:hidden border-b border-[var(--border-color)] bg-[var(--bg-surface-elevated)] font-mono text-xs">
+      <div className="flex lg:hidden border-b border-[var(--border-color)] bg-[var(--bg-surface-elevated)] font-mono text-xs shrink-0">
         <button
           onClick={() => setActiveTab("graph")}
           className={`flex-1 py-2 flex items-center justify-center gap-2 border-b-2 font-bold cursor-pointer ${
@@ -132,10 +138,10 @@ function IncidentInvestigationContent() {
       </div>
 
       {/* Main Investigation Split Pane Workspace */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+      <div className="flex-1 min-h-0 min-w-0 flex flex-col lg:flex-row overflow-hidden relative">
         {/* Left / Center: Interactive Attack Graph */}
         <div
-          className={`flex-1 h-full flex flex-col relative ${
+          className={`flex-1 min-w-0 min-h-0 h-full flex flex-col relative ${
             activeTab === "graph" ? "flex" : "hidden lg:flex"
           }`}
         >
@@ -149,39 +155,43 @@ function IncidentInvestigationContent() {
               setSelectedEdge(null);
             }}
             onSelectEdge={handleInspectEdgeEvidence}
+            isTimelineOpen={isTimelineOpen}
+            onToggleTimeline={() => setIsTimelineOpen(!isTimelineOpen)}
           />
         </div>
 
         {/* Right Pane: Chronological Timeline + Selected Step Details */}
-        <div
-          className={`w-full lg:w-[440px] xl:w-[500px] border-l-2 border-[var(--border-color)] flex flex-col shrink-0 h-full overflow-hidden ${
-            activeTab === "timeline" ? "flex" : "hidden lg:flex"
-          }`}
-        >
-          {/* Selected Step Detail Panel (Docked at top of right rail if step is selected) */}
-          {selectedStep && (
-            <div className="shrink-0 border-b-2 border-[var(--border-color)]">
-              <AttackStepDetail
-                step={selectedStep}
-                onClose={() => setSelectedStep(null)}
+        {isTimelineOpen && (
+          <div
+            className={`w-full lg:w-[380px] xl:w-[440px] border-l-2 border-[var(--border-color)] flex flex-col shrink-0 h-full min-h-0 overflow-hidden ${
+              activeTab === "timeline" ? "flex" : "hidden lg:flex"
+            }`}
+          >
+            {/* Selected Step Detail Panel (Docked at top of right rail if step is selected) */}
+            {selectedStep && (
+              <div className="shrink-0 max-h-[45%] overflow-y-auto border-b-2 border-[var(--border-color)]">
+                <AttackStepDetail
+                  step={selectedStep}
+                  onClose={() => setSelectedStep(null)}
+                  onInspectEvidence={handleInspectStepEvidence}
+                />
+              </div>
+            )}
+
+            {/* Chronological Timeline */}
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <ChronologicalTimeline
+                steps={incident.steps}
+                selectedStepUid={selectedStep?.step_uid || null}
+                onSelectStep={(step) => {
+                  setSelectedStep(step);
+                  setSelectedEdge(null);
+                }}
                 onInspectEvidence={handleInspectStepEvidence}
               />
             </div>
-          )}
-
-          {/* Chronological Timeline */}
-          <div className="flex-1 overflow-hidden">
-            <ChronologicalTimeline
-              steps={incident.steps}
-              selectedStepUid={selectedStep?.step_uid || null}
-              onSelectStep={(step) => {
-                setSelectedStep(step);
-                setSelectedEdge(null);
-              }}
-              onInspectEvidence={handleInspectStepEvidence}
-            />
           </div>
-        </div>
+        )}
       </div>
 
       {/* Evidence Inspection Drawer */}
