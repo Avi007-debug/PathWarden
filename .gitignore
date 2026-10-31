@@ -29,6 +29,10 @@ dist/
 *.evtx
 *.pcap
 *.parquet
+*.sqlite3
+*.sqlite3*
+data/correlation_state.json
+data/benchmarks/*
 edr_events.json
 firex-30G.log*
 build/logs/
