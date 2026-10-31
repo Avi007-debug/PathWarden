@@ -3,20 +3,46 @@
   "id": "bundle--pathwarden-mitre-v14",
   "spec_version": "2.1",
   "objects": [
-    {
-      "id": "attack-pattern--t1003-001",
-      "name": "LSASS Memory",
-      "external_id": "T1003.001"
-    },
-    {
-      "id": "attack-pattern--t1059-001",
-      "name": "PowerShell",
-      "external_id": "T1059.001"
-    },
-    {
-      "id": "attack-pattern--t1550-002",
-      "name": "Pass the Hash",
-      "external_id": "T1550.002"
-    }
+    {"external_id": "T1003.001", "name": "LSASS Memory", "tactic": "Credential Access"},
+    {"external_id": "T1018", "name": "Remote System Discovery", "tactic": "Discovery"},
+    {"external_id": "T1021.001", "name": "Remote Desktop Protocol", "tactic": "Lateral Movement"},
+    {"external_id": "T1021.002", "name": "SMB/Windows Admin Shares", "tactic": "Lateral Movement"},
+    {"external_id": "T1030", "name": "Data Transfer Size Limits", "tactic": "Exfiltration"},
+    {"external_id": "T1046", "name": "Network Service Discovery", "tactic": "Discovery"},
+    {"external_id": "T1048.002", "name": "Exfiltration Over Asymmetric Encrypted Non-C2 Protocol", "tactic": "Exfiltration"},
+    {"external_id": "T1048.003", "name": "Exfiltration Over Unencrypted Non-C2 Protocol", "tactic": "Exfiltration"},
+    {"external_id": "T1059.001", "name": "PowerShell", "tactic": "Execution"},
+    {"external_id": "T1059.003", "name": "Windows Command Shell", "tactic": "Execution"},
+    {"external_id": "T1059.004", "name": "Unix Shell", "tactic": "Execution"},
+    {"external_id": "T1059.007", "name": "JavaScript", "tactic": "Execution"},
+    {"external_id": "T1070.001", "name": "Clear Windows Event Logs", "tactic": "Defense Evasion"},
+    {"external_id": "T1071.001", "name": "Web Protocols", "tactic": "Command and Control"},
+    {"external_id": "T1071.004", "name": "DNS", "tactic": "Command and Control"},
+    {"external_id": "T1073", "name": "DLL Side-Loading", "tactic": "Defense Evasion"},
+    {"external_id": "T1078", "name": "Valid Accounts", "tactic": "Defense Evasion"},
+    {"external_id": "T1083", "name": "File and Directory Discovery", "tactic": "Discovery"},
+    {"external_id": "T1087.002", "name": "Domain Account", "tactic": "Discovery"},
+    {"external_id": "T1105", "name": "Ingress Tool Transfer", "tactic": "Command and Control"},
+    {"external_id": "T1110.001", "name": "Password Guessing", "tactic": "Credential Access"},
+    {"external_id": "T1110.003", "name": "Password Spraying", "tactic": "Credential Access"},
+    {"external_id": "T1110.004", "name": "Credential Stuffing", "tactic": "Credential Access"},
+    {"external_id": "T1135", "name": "Network Share Discovery", "tactic": "Discovery"},
+    {"external_id": "T1136.001", "name": "Local Account", "tactic": "Persistence"},
+    {"external_id": "T1136.002", "name": "Domain Account", "tactic": "Persistence"},
+    {"external_id": "T1189", "name": "Drive-by Compromise", "tactic": "Initial Access"},
+    {"external_id": "T1190", "name": "Exploit Public-Facing Application", "tactic": "Initial Access"},
+    {"external_id": "T1204.002", "name": "Malicious File", "tactic": "Execution"},
+    {"external_id": "T1490", "name": "Inhibit System Recovery", "tactic": "Impact"},
+    {"external_id": "T1498.001", "name": "Direct Network Flood", "tactic": "Impact"},
+    {"external_id": "T1498.002", "name": "Reflection Amplification", "tactic": "Impact"},
+    {"external_id": "T1505.003", "name": "Web Shell", "tactic": "Persistence"},
+    {"external_id": "T1550.002", "name": "Pass the Hash", "tactic": "Lateral Movement"},
+    {"external_id": "T1558.003", "name": "Kerberoasting", "tactic": "Credential Access"},
+    {"external_id": "T1560.001", "name": "Archive via Utility", "tactic": "Collection"},
+    {"external_id": "T1562.001", "name": "Disable or Modify Tools", "tactic": "Defense Evasion"},
+    {"external_id": "T1562.002", "name": "Disable Windows Event Logging", "tactic": "Defense Evasion"},
+    {"external_id": "T1566.001", "name": "Spearphishing Attachment", "tactic": "Initial Access"},
+    {"external_id": "T1569.002", "name": "Service Execution", "tactic": "Execution"},
+    {"external_id": "T1573", "name": "Encrypted Channel", "tactic": "Command and Control"}
   ]
 }
