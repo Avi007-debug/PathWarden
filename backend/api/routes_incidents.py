@@ -232,15 +232,20 @@ def get_incident_path(incident_id: str):
 
 
 def _fetch_graph_data(incident_id: str) -> dict:
-    if not _has_steps_edges(incident_id):
+    step_files = glob.glob(os.path.join(_DATA_DIR, "attack_steps", "*.parquet"))
+    edge_files = glob.glob(os.path.join(_DATA_DIR, "attack_edges", "*.parquet"))
+    if not step_files or not edge_files:
         return _demo_graph(incident_id)
 
-    steps_glob = os.path.join(_DATA_DIR, "attack_steps", "*.parquet").replace("\\", "/")
-    edges_glob = os.path.join(_DATA_DIR, "attack_edges", "*.parquet").replace("\\", "/")
+    step_files.sort(key=os.path.getmtime, reverse=True)
+    edge_files.sort(key=os.path.getmtime, reverse=True)
+    steps_path = step_files[0].replace("\\", "/")
+    edges_path = edge_files[0].replace("\\", "/")
+
     con = _get_con()
     try:
-        con.execute(f"CREATE VIEW steps AS SELECT * FROM read_parquet('{steps_glob}')")
-        con.execute(f"CREATE VIEW edges AS SELECT * FROM read_parquet('{edges_glob}')")
+        con.execute(f"CREATE VIEW steps AS SELECT * FROM read_parquet('{steps_path}')")
+        con.execute(f"CREATE VIEW edges AS SELECT * FROM read_parquet('{edges_path}')")
 
         step_rows = con.execute(
             "SELECT * FROM steps WHERE incident_id = ? ORDER BY order_index", [incident_id]
