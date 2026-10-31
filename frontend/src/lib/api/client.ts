@@ -198,7 +198,7 @@ export const pathWardenApi = {
     ),
   uploadAndRun: async (file: File, isDemo = false) => {
     const baseUrl = getApiBaseUrl();
-    if (isDemo || !baseUrl) {
+    if (!baseUrl) {
       return {
         status: "COMPLETED",
         run_id: "RUN-" + Math.floor(Math.random() * 9000 + 1000),
@@ -237,7 +237,7 @@ export const pathWardenApi = {
     request<{ steps: IncidentDetail["steps"]; edges: IncidentDetail["edges"] }>(`/incidents/${id}/path`, undefined, isDemo),
   getReachability: (incidentId?: string, isDemo = false) =>
     request<ReachabilityItem[]>(
-      incidentId ? `/incidents/${incidentId}/reach` : "/incidents/INC-2026-0841/reach",
+      incidentId ? `/incidents/${incidentId}/reach` : "/incidents/INC-001/reach",
       undefined,
       isDemo
     ),
