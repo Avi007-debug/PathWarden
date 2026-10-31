@@ -350,17 +350,48 @@ def main():
     print(f"  Batch Size   : {args.batch_size} lines per chunk")
     print("=" * 75)
 
-    if not os.path.exists(args.input):
-        print(f"\n[ERROR] Input file '{args.input}' not found!")
-        print("Please check the path. Example paths:")
-        print("  python run_investigation.py --input edr_events.json")
-        print("  python run_investigation.py --input C:\\Users\\Vedant\\Downloads\\firex-30g")
-        sys.exit(1)
+    input_file = args.input
+    if not os.path.exists(input_file):
+        # Auto-resolve file variations (.log, local directory fallback)
+        candidates = [
+            f"{input_file}.log",
+            f"{input_file}.json",
+            os.path.basename(input_file),
+            f"{os.path.basename(input_file)}.log",
+            f"{os.path.basename(input_file)}.txt",
+        ]
+        resolved = None
+        for c in candidates:
+            if os.path.exists(c):
+                resolved = c
+                break
 
-    file_size_gb = os.path.getsize(args.input) / (1024 ** 3)
+        if not resolved:
+            # Check local working directory for any firex file (excluding manifest)
+            matches = glob.glob("*firex*") + glob.glob("*30g*") + glob.glob("*30G*")
+            matches = [m for m in matches if not m.endswith(".manifest.json")]
+            if matches:
+                resolved = matches[0]
+
+        if resolved and os.path.exists(resolved):
+            print(f"  [Auto-Resolved] Found matching file: '{resolved}'")
+            input_file = resolved
+        else:
+            print(f"\n[ERROR] Input file '{args.input}' not found!")
+            print(f"Current working directory: {os.path.abspath(os.curdir)}")
+            print("Files in directory matching log formats:")
+            for f in glob.glob("*.json") + glob.glob("*.log") + glob.glob("*30g*"):
+                print(f"  - {f}")
+            print("\nExample commands:")
+            print("  python run_investigation.py --input firex-30g")
+            print("  python run_investigation.py --input firex-30g.log")
+            print("  python run_investigation.py --input edr_events.json")
+            sys.exit(1)
+
+    file_size_gb = os.path.getsize(input_file) / (1024 ** 3)
     print(f"\n[PHASE 1/3] Streaming Ingestion & Normalization ({file_size_gb:.2f} GB) ...")
     total_events, total_detections = ingest_and_extract_detections(
-        input_file=args.input,
+        input_file=input_file,
         data_dir=args.data_dir,
         batch_size=args.batch_size,
     )
