@@ -1,0 +1,16 @@
+# MITRE ATT&CK to Cyber Kill Chain Stage Mappings
+kill_chain_stages:
+  RECONNAISSANCE:
+    tactics: ["Reconnaissance"]
+  WEAPONIZATION:
+    tactics: ["Resource Development"]
+  DELIVERY:
+    tactics: ["Initial Access"]
+  EXPLOITATION:
+    tactics: ["Execution", "Privilege Escalation"]
+  INSTALLATION:
+    tactics: ["Persistence", "Defense Evasion"]
+  COMMAND_AND_CONTROL:
+    tactics: ["Command and Control"]
+  ACTIONS_ON_OBJECTIVES:
+    tactics: ["Credential Access", "Discovery", "Lateral Movement", "Collection", "Exfiltration", "Impact"]

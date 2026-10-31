@@ -1,0 +1,20 @@
+# PathWarden Parser Registry
+parsers:
+  json_edr:
+    format: "json"
+    adapter: "endpoint"
+    mime: "application/json"
+    description: "CrowdStrike/Defender/Mitigata EDR JSON stream"
+  csv_sysmon:
+    format: "csv"
+    adapter: "endpoint"
+    mime: "text/csv"
+    delimiter: ","
+  jsonl_network:
+    format: "jsonl"
+    adapter: "network"
+    mime: "application/x-ndjson"
+  text_syslog:
+    format: "text"
+    adapter: "generic"
+    regex: "^(?P<timestamp>\\S+)\\s+(?P<host>\\S+)\\s+(?P<process>\\S+):\\s+(?P<message>.*)$"

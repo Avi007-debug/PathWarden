@@ -1,0 +1,14 @@
+# PathWarden Telemetry Source Mappings
+mappings:
+  sim_edr:
+    source_name: "Mitigata SimEDR Telemetry"
+    timestamp_field: "@timestamp"
+    host_field: "agent.hostname"
+    user_field: "user.name"
+    process_field: "process.executable"
+    command_field: "process.command_line"
+  windows_security:
+    source_name: "Windows Event Logs"
+    timestamp_field: "TimeCreated.SystemTime"
+    host_field: "Computer"
+    user_field: "TargetUserName"
