@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing & Coverage
+coverage/
+
+# Next.js & Production Build
+.next/
+out/
+build/
+dist/
+
+# Environment variables
+.env
+.env*.local
+.env.development
+.env.test
+.env.production
+*.env
+
+# Large raw logs, EDR dumps & manifests
+*.log
+*.jsonl
+*.evtx
+*.pcap
+*.parquet
+edr_events.json
+firex-30G.log*
+build/logs/
+
+# Debug and system files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
+next-env.d.ts
+
