@@ -7,6 +7,94 @@ export type TerminalDisposition =
   | "VALID_EXCLUDED"
   | "ELIGIBLE";
 
+export type ParseStatus =
+  | "PARSED"
+  | "PARTIAL"
+  | "MALFORMED"
+  | "UNSUPPORTED_FORMAT"
+  | "UNCLASSIFIED";
+
+export type EventOutcome = "SUCCESS" | "FAILURE" | "UNKNOWN";
+
+export type EvidenceStatus = "OBSERVED" | "INFERRED" | "POTENTIAL";
+
+export type EntityType =
+  | "host"
+  | "user"
+  | "process"
+  | "ip"
+  | "domain"
+  | "file"
+  | "session";
+
+export interface CanonicalEvent {
+  event_uid: string;
+  source_event_id: string | null;
+  event_ts: string | null;
+  event_ts_original: string | null;
+  ingest_ts: string;
+  source_type: string;
+  sensor_id: string | null;
+  event_category: string | null;
+  event_type: string | null;
+  action: string | null;
+  outcome: EventOutcome | null;
+  host_id: string | null;
+  host_name: string | null;
+  user_id: string | null;
+  user_name: string | null;
+  src_ip: string | null;
+  src_port: number | null;
+  dst_ip: string | null;
+  dst_port: number | null;
+  network_protocol: string | null;
+  process_id: string | null;
+  parent_process_id: string | null;
+  process_entity_id: string | null;
+  session_id: string | null;
+  raw_event_reference: string;
+  parse_status: ParseStatus;
+  dq_flags: string[];
+  extra: Record<string, unknown>;
+}
+
+export interface DetectionRecord {
+  detection_id: string;
+  rule_id: string;
+  rule_name: string;
+  rule_version: string;
+  event_uids: string[];
+  primary_event_uid: string | null;
+  detected_at: string;
+  severity: "INFO" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | "UNKNOWN";
+  confidence: number | null;
+  description: string;
+  evidence: Record<string, unknown> | unknown[];
+  mitre_technique_id: string | null;
+  mitre_technique_name: string | null;
+  mitre_tactic: string | null;
+  kill_chain_stage: string;
+  kc_confidence: number | string;
+  mapping_reason: string;
+}
+
+export interface GraphRelationship {
+  relationship_id: string;
+  incident_id: string;
+  entity_id: string;
+  entity_type: EntityType;
+  source_entity_id: string;
+  target_entity_id: string;
+  relationship_type: string;
+  relationship_score: number;
+  relationship_confidence?: number | string | null;
+  evidence_event_uids: string[];
+  explanation: string;
+  observed_or_inferred: EvidenceStatus;
+  first_seen_ts: string | null;
+  last_seen_ts: string | null;
+}
+
 export type DataQualityFlag =
   | "HOST_INFERRED"
   | "TIMESTAMP_UNCERTAIN"
