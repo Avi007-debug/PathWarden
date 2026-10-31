@@ -156,6 +156,16 @@ class IncidentClusterer:
                         cluster.cluster_id, strong_score
                     )
 
+            # Multi-stage kill chain pass: multiple distinct tactics on same asset/user
+            if not passes and stage_count >= 2 and step_count >= 3:
+                max_score = max((r.relationship_score for r in cluster.relationships), default=0)
+                if max_score >= 0.60:
+                    passes = True
+                    logger.info(
+                        "Cluster %s: multi-stage kill chain gate pass (stages=%d, steps=%d, max_score=%.2f)",
+                        cluster.cluster_id, stage_count, step_count, max_score
+                    )
+
             cluster.passed_gate = passes
             if passes:
                 validated.append(cluster)

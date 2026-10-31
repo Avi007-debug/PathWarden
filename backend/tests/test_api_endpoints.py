@@ -95,3 +95,64 @@ def test_api_benchmarks_endpoint():
     assert "metrics" in bench
     assert bench["metrics"]["detection_recall_pct"] >= 90.0
     assert len(bench["stages"]) >= 8
+
+
+def test_api_status_machine_specs_and_target_matrix():
+    status = get_system_status()
+    assert "machine_specifications" in status
+    specs = status["machine_specifications"]
+    assert specs["cpu_cores"] >= 1
+    assert specs["total_ram_gb"] > 0
+    assert "storage_engine" in specs
+
+    assert "target_matrix" in status
+    targets = status["target_matrix"]
+    assert len(targets) == 7
+    measures = [t["measure"] for t in targets]
+    assert "Detection" in measures
+    assert "Correct labels" in measures
+    assert "Attack path" in measures
+    assert "False alarms" in measures
+    assert "Processing time" in measures
+    assert "Memory" in measures
+    assert "Investigation speed" in measures
+
+
+def test_bonus_b1_risk_score_sorting():
+    incidents = list_incidents()
+    assert len(incidents) >= 4
+    # Ensure sorted by risk_score DESC: highest risk incident is on top
+    risk_scores = [inc.get("risk_score", 0) for inc in incidents]
+    assert risk_scores == sorted(risk_scores, reverse=True)
+    assert risk_scores[0] >= 80  # Worst one is on top
+    # Ensure plain English report is present
+    for inc in incidents:
+        assert "plain_english_report" in inc
+        assert len(inc["plain_english_report"]) > 20
+
+
+def test_bonus_b4_rules_api():
+    from api.routes_rules import get_rules, create_rule, delete_rule, RuleModel
+    rules_resp = get_rules()
+    assert rules_resp["rules_count"] >= 5
+    assert isinstance(rules_resp["rules"], list)
+
+    # Test adding a rule dynamically (config-driven)
+    new_rule = RuleModel(
+        rule_id="RULE-TEST-B4-001",
+        rule_name="Dynamic Sigma PowerShell WebClient Detection",
+        rule_version="1.0.0",
+        technique_id="T1059.001",
+        technique_name="PowerShell",
+        severity="HIGH",
+        tactic="Execution",
+        description="Detects dynamic creation of System.Net.WebClient in CLI",
+        query="SELECT event_uid FROM events WHERE command_line LIKE '%Net.WebClient%'",
+    )
+    res = create_rule(new_rule)
+    assert res["status"] == "SUCCESS"
+
+    # Clean up test rule
+    del_res = delete_rule("RULE-TEST-B4-001")
+    assert del_res["status"] == "SUCCESS"
+

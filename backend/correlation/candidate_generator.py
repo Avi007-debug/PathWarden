@@ -76,6 +76,34 @@ class CandidateGenerator:
         yield from self._same_session_continuation()
         yield from self._lateral_auth_followup()
         yield from self._network_connection_followup()
+        yield from self._same_host_temporal_continuation()
+
+    def _same_host_temporal_continuation(self) -> Iterator[CandidatePair]:
+        """Detect sequential detections on same host within temporal window."""
+        sql = f"""
+            SELECT
+                a.detection_id   AS src_detection_id,
+                b.detection_id   AS dst_detection_id,
+                a.event_uid      AS src_event_uid,
+                b.event_uid      AS dst_event_uid,
+                a.host_name      AS src_host,
+                b.host_name      AS dst_host,
+                a.user_name      AS src_user,
+                b.user_name      AS dst_user,
+                a.event_ts       AS src_ts,
+                b.event_ts       AS dst_ts,
+                (b.event_ts - a.event_ts) AS delta_seconds,
+                'same_host_time' AS candidate_type,
+                a.host_name      AS join_key
+            FROM detections a
+            JOIN detections b
+              ON  a.host_name    = b.host_name
+              AND a.host_name   <> ''
+              AND b.event_ts    >= a.event_ts
+              AND b.event_ts    <= a.event_ts + {self.time_window_sec}
+              AND a.detection_id < b.detection_id
+        """
+        yield from self._run_query(sql, "same_host_time")
 
     # ------------------------------------------------------------------
     # View registration with resilient schema adapter

@@ -27,6 +27,17 @@ export function InvestigationHeader({
           <Badge variant={incident.severity === "CRITICAL" ? "critical" : "warning"} size="sm">
             {incident.severity}
           </Badge>
+          <span
+            className={`text-[10px] px-2 py-0.5 font-black uppercase tracking-wider border-2 shadow-[1px_1px_0px_rgba(0,0,0,0.5)] ${
+              (incident.risk_score ?? 75) >= 85
+                ? "bg-red-500/20 text-red-400 border-red-500"
+                : (incident.risk_score ?? 75) >= 65
+                ? "bg-amber-500/20 text-amber-400 border-amber-500"
+                : "bg-blue-500/20 text-blue-400 border-blue-500"
+            }`}
+          >
+            RISK {incident.risk_score ?? 75}/100
+          </span>
           <h1 className="text-sm sm:text-base font-black text-[var(--text-primary)] tracking-wider">
             {incident.incident_id}
           </h1>
@@ -113,9 +124,19 @@ export function InvestigationHeader({
               <Layers className="w-3.5 h-3.5 text-[#00C8FF]" />
               {incident.title}
             </h2>
-            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed font-medium">
+            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed font-medium mb-2">
               {incident.summary}
             </p>
+            {incident.plain_english_report && (
+              <div className="p-3 bg-[var(--bg-surface-elevated)] border-2 border-[var(--border-color)] shadow-[2px_2px_0px_var(--border-color)]">
+                <span className="text-[10px] uppercase font-black text-[#00C8FF] block mb-1">
+                  Bonus B-2: Executive Plain English Incident Narrative
+                </span>
+                <p className="text-xs text-[var(--text-primary)] leading-relaxed font-medium">
+                  {incident.plain_english_report}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Key Investigation Metadata Bar */}

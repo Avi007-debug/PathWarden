@@ -219,6 +219,7 @@ export interface Incident {
   incident_id: string;
   title: string;
   severity: IncidentSeverity;
+  risk_score?: number; // Bonus B-1: 0 - 100 risk score
   confidence: number; // 0.0 - 1.0
   first_seen: string;
   last_seen: string;
@@ -230,6 +231,7 @@ export interface Incident {
   status: "ACTIVE_INVESTIGATION" | "CONTAINED" | "RESOLVED" | "VERIFIED_ATTACK";
   dq_caveats: IncidentDataQualityCaveat[];
   summary: string;
+  plain_english_report?: string; // Bonus B-2: Executive plain English narrative
   planted_attack_id?: string;
   is_planted_match?: boolean;
   fp_verification?: FPVerification | null;
@@ -386,6 +388,31 @@ export interface RunAnalysisResponse {
   status: "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED";
   message: string;
   started_at: string;
+  events_processed?: number;
+  detections_extracted?: number;
+  incidents_count?: number;
+}
+
+export interface MachineSpecifications {
+  cpu_cores: number;
+  total_ram_gb: number;
+  used_ram_gb: number;
+  free_ram_gb: number;
+  process_memory_mb: number;
+  platform: string;
+  budget_limit_gb: number;
+  storage_engine: string;
+}
+
+export interface CompetitionTargetItem {
+  id: string;
+  measure: string;
+  how: string;
+  good: string;
+  great: string;
+  actual: string;
+  status: "Great" | "Good" | "Needs Improvement";
+  passing: boolean;
 }
 
 export interface ProcessingStatusResponse {
@@ -401,5 +428,31 @@ export interface ProcessingStatusResponse {
   incidents_count: number;
   peak_memory_mb: number;
   error_message?: string | null;
+  memory_used_gb?: number;
+  memory_budget_gb?: number;
+  memory_usage_pct?: number;
+  cpu_usage_pct?: number;
+  storage_engine?: string;
+  engine_mode?: string;
+  machine_specifications?: MachineSpecifications;
+  target_matrix?: CompetitionTargetItem[];
+}
+
+export interface DetectionRule {
+  rule_id: string;
+  rule_name: string;
+  rule_version?: string;
+  technique_id: string;
+  technique_name: string;
+  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | string;
+  tactic: string;
+  description: string;
+  query: string;
+}
+
+export interface RulesResponse {
+  rules_count: number;
+  config_path: string;
+  rules: DetectionRule[];
 }
 

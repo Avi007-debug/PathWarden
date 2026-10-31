@@ -50,6 +50,17 @@ export function RecentIncidentsTable({ incidents }: RecentIncidentsTableProps) {
                   >
                     {inc.severity}
                   </Badge>
+                  <span
+                    className={`text-[9px] px-1.5 py-0.5 font-black border ${
+                      (inc.risk_score ?? 75) >= 85
+                        ? "bg-red-500/20 text-red-400 border-red-500"
+                        : (inc.risk_score ?? 75) >= 65
+                        ? "bg-amber-500/20 text-amber-400 border-amber-500"
+                        : "bg-blue-500/20 text-blue-400 border-blue-500"
+                    }`}
+                  >
+                    RISK {inc.risk_score ?? 75}/100
+                  </span>
                   <Link
                     href={`/incidents/${inc.incident_id}`}
                     className="font-bold text-[var(--text-primary)] hover:text-[#00C8FF] transition-colors tracking-wider"

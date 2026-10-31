@@ -11,6 +11,8 @@ import {
   ProcessingStatusResponse,
   RunAnalysisRequest,
   RunAnalysisResponse,
+  DetectionRule,
+  RulesResponse,
 } from "./types";
 import {
   DEMO_INCIDENTS,
@@ -25,13 +27,8 @@ import {
 export const getApiBaseUrl = (): string => {
   if (process.env.NEXT_PUBLIC_API_BASE_URL) return process.env.NEXT_PUBLIC_API_BASE_URL;
   if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-  if (typeof window !== "undefined") {
-    const isLocalhost =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
-    if (isLocalhost) return "http://localhost:8000";
-  }
-  return "";
+  // Default to local backend on port 8000 so deployed frontend connects to local backend
+  return "http://localhost:8000";
 };
 
 export class ApiError extends Error {
@@ -69,6 +66,7 @@ async function request<T>(
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        "ngrok-skip-browser-warning": "true",
         ...(options?.headers || {}),
       },
     });
@@ -137,6 +135,44 @@ function getSyntheticResponse<T>(endpoint: string): T {
     const firstKey = Object.keys(DEMO_RAW_EVIDENCE_MAP)[0];
     return DEMO_RAW_EVIDENCE_MAP[firstKey] as unknown as T;
   }
+  if (endpoint === "/rules") {
+    return {
+      rules_count: 5,
+      config_path: "detection_rules.yaml",
+      rules: [
+        {
+          rule_id: "RULE-T1110-001",
+          rule_name: "Brute Force Burst",
+          technique_id: "T1110.001",
+          technique_name: "Password Guessing",
+          severity: "HIGH",
+          tactic: "Credential Access",
+          description: "High volume of failed authentications from a single source IP.",
+          query: "SELECT src_ip, count(*) as failure_count FROM events WHERE outcome = 'FAILURE' GROUP BY src_ip HAVING count(*) >= 20",
+        },
+        {
+          rule_id: "RULE-T1046-001",
+          rule_name: "Network Port Scan",
+          technique_id: "T1046",
+          technique_name: "Network Service Discovery",
+          severity: "MEDIUM",
+          tactic: "Discovery",
+          description: "Single source contacting numerous distinct destination ports.",
+          query: "SELECT src_ip, dst_ip, count(DISTINCT dst_port) as distinct_ports FROM events GROUP BY src_ip, dst_ip HAVING count(DISTINCT dst_port) >= 10",
+        },
+        {
+          rule_id: "RULE-T1071-001",
+          rule_name: "C2 Web Beaconing",
+          technique_id: "T1071.001",
+          technique_name: "Web Protocols",
+          severity: "HIGH",
+          tactic: "Command and Control",
+          description: "Repetitive outbound connections to external destination IP over HTTP/HTTPS.",
+          query: "SELECT src_ip, dst_ip, dst_port, count(*) as beacon_count FROM events WHERE dst_port IN (80, 443, 8080) GROUP BY src_ip, dst_ip, dst_port HAVING count(*) >= 25",
+        },
+      ],
+    } as unknown as T;
+  }
   if (endpoint === "/run") {
     return {
       run_id: "RUN-" + Math.floor(Math.random() * 9000 + 1000),
@@ -160,6 +196,41 @@ export const pathWardenApi = {
       },
       isDemo
     ),
+  uploadAndRun: async (file: File, isDemo = false) => {
+    const baseUrl = getApiBaseUrl();
+    if (isDemo || !baseUrl) {
+      return {
+        status: "COMPLETED",
+        run_id: "RUN-" + Math.floor(Math.random() * 9000 + 1000),
+        filename: file.name,
+        events_processed: 10000,
+        detections_extracted: 480,
+        incidents_count: 25,
+        message: `Processed ${file.name} in Synthetic Demo Enclave: 10,000 events, 25 incidents formed.`,
+      };
+    }
+
+    const res = await fetch(`${baseUrl}/upload-and-run?filename=${encodeURIComponent(file.name)}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "ngrok-skip-browser-warning": "true",
+      },
+      body: file,
+    });
+
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const errJson = await res.json();
+        detail = errJson.detail || errJson.message || "";
+      } catch {
+        // non-json response
+      }
+      throw new Error(detail || `File upload failed with HTTP status ${res.status}`);
+    }
+    return await res.json();
+  },
   getIncidents: (isDemo = false) => request<Incident[]>("/incidents", undefined, isDemo),
   getIncident: (id: string, isDemo = false) => request<IncidentDetail>(`/incidents/${id}`, undefined, isDemo),
   getIncidentPath: (id: string, isDemo = false) =>
@@ -174,6 +245,28 @@ export const pathWardenApi = {
   getBenchmark: (isDemo = false) => request<BenchmarkReport>("/bench", undefined, isDemo),
   getEvidence: (eventUid: string, ctx = 5, isDemo = false) =>
     request<RawEvidenceRecord>(`/evidence?event_uid=${encodeURIComponent(eventUid)}&ctx=${ctx}`, undefined, isDemo),
+  // Bonus B-4: Rules Configuration
+  getRules: (isDemo = false) => request<RulesResponse>("/rules", undefined, isDemo),
+  createRule: (rule: DetectionRule, isDemo = false) =>
+    request<{ status: string; message: string; rule: DetectionRule }>(
+      "/rules",
+      {
+        method: "POST",
+        body: JSON.stringify(rule),
+      },
+      isDemo
+    ),
+  updateRule: (ruleId: string, rule: DetectionRule, isDemo = false) =>
+    request<{ status: string; message: string; rule: DetectionRule }>(
+      `/rules/${ruleId}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(rule),
+      },
+      isDemo
+    ),
+  deleteRule: (ruleId: string, isDemo = false) =>
+    request<{ status: string; message: string }>(`/rules/${ruleId}`, { method: "DELETE" }, isDemo),
   hasBackendUrl: () => Boolean(getApiBaseUrl()),
 };
 

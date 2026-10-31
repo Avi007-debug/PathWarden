@@ -58,6 +58,8 @@ class RelationshipScorer:
             return self._score_lateral_auth(pair)
         elif ctype == "network_follow":
             return self._score_network_follow(pair)
+        elif ctype == "same_host_time":
+            return self._score_same_host_time(pair)
         else:
             logger.warning("Unknown candidate_type %s — skipping", ctype)
             return None
@@ -140,6 +142,22 @@ class RelationshipScorer:
                 f"(no confirmed auth), followed by activity Δt={pair.delta_seconds:.1f}s"
             ),
             confidence_category="MODERATE" if score >= 0.50 else "INFERRED",
+        )
+
+    def _score_same_host_time(self, pair: CandidatePair) -> ScoredRelationship:
+        base = 0.78
+        score = max(0.50, base - (pair.delta_seconds / 300) * 0.15)
+        return ScoredRelationship(
+            src_detection_id=pair.src_detection_id,
+            dst_detection_id=pair.dst_detection_id,
+            relationship_type="shared_host_traversal",
+            relationship_score=round(score, 4),
+            observed_or_inferred=EvidenceStatus.INFERRED.value,
+            evidence_event_uids=list(pair.raw_evidence_uids),
+            explanation=(
+                f"Temporal correlation on host {pair.src_host}: activity within Δt={pair.delta_seconds:.1f}s"
+            ),
+            confidence_category="STRONG" if score >= 0.75 else "MODERATE",
         )
 
     # ------------------------------------------------------------------

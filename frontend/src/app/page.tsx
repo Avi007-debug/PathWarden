@@ -174,7 +174,11 @@ export default function OverviewDashboardPage() {
       )}
 
         {/* Ingestion & Analysis Run Modal */}
-        <RunAnalysisModal isOpen={runModalOpen} onClose={() => setRunModalOpen(false)} />
+        <RunAnalysisModal
+          isOpen={runModalOpen}
+          onClose={() => setRunModalOpen(false)}
+          onComplete={loadDashboardData}
+        />
       </div>
       <Footer />
     </div>

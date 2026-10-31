@@ -120,14 +120,14 @@ class NetworkTopology:
                 SELECT
                     host_name,
                     dst_ip,
-                    protocol,
+                    COALESCE(network_protocol, '') AS protocol,
                     event_uid,
                     CASE WHEN event_type IN ('network_accept','authentication_success') THEN TRUE
                          ELSE FALSE END AS confirmed
                 FROM net_events
                 WHERE dst_ip IS NOT NULL AND dst_ip != ''
                   AND host_name IS NOT NULL AND host_name != ''
-                GROUP BY host_name, dst_ip, protocol, event_uid, confirmed
+                GROUP BY host_name, dst_ip, network_protocol, event_uid, confirmed
             """).fetchall()
         except Exception as exc:  # noqa: BLE001
             logger.warning("NetworkTopology link extraction failed: %s", exc)

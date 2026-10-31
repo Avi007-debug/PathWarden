@@ -31,7 +31,8 @@ export function IncidentTable({ incidents }: IncidentTableProps) {
           <thead>
             <tr className="border-b-2 border-[var(--border-color)] bg-[var(--bg-surface-elevated)] text-[10px] uppercase text-[var(--text-dim)] tracking-wider font-extrabold">
               <th className="py-3 px-4">Severity / Incident</th>
-              <th className="py-3 px-4">Attack Summary</th>
+              <th className="py-3 px-4 text-center">Risk (B-1)</th>
+              <th className="py-3 px-4">Attack Summary & Narrative (B-2)</th>
               <th className="py-3 px-4">Hosts & Entities</th>
               <th className="py-3 px-4 text-center">Steps</th>
               <th className="py-3 px-4 text-center">Confidence</th>
@@ -40,7 +41,8 @@ export function IncidentTable({ incidents }: IncidentTableProps) {
             </tr>
           </thead>
           <tbody className="divide-y-2 divide-[var(--border-subtle)]">
-            {incidents.map((incident) => {
+            {incidents.map((incident, index) => {
+              const risk = incident.risk_score ?? 75;
               return (
                 <tr
                   key={incident.incident_id}
@@ -76,7 +78,29 @@ export function IncidentTable({ incidents }: IncidentTableProps) {
                     </div>
                   </td>
 
-                  {/* Summary & Tactics */}
+                  {/* Bonus B-1: Risk Score (0-100) */}
+                  <td className="py-3.5 px-4 text-center align-top">
+                    <div className="flex flex-col items-center">
+                      <span
+                        className={`text-xs px-2 py-0.5 font-black border shadow-[1px_1px_0px_#000] ${
+                          risk >= 85
+                            ? "bg-red-500/20 text-red-400 border-red-500"
+                            : risk >= 65
+                            ? "bg-amber-500/20 text-amber-400 border-amber-500"
+                            : "bg-blue-500/20 text-blue-400 border-blue-500"
+                        }`}
+                      >
+                        {risk}/100
+                      </span>
+                      {index === 0 && (
+                        <span className="text-[8px] bg-red-500 text-white font-extrabold px-1 mt-1 rounded uppercase tracking-wider">
+                          Top Risk
+                        </span>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Summary & Plain English Report (Bonus B-2) */}
                   <td className="py-3.5 px-4 max-w-md align-top">
                     <div className="flex flex-col gap-1.5">
                       <Link
@@ -88,6 +112,12 @@ export function IncidentTable({ incidents }: IncidentTableProps) {
                       <p className="text-[11px] text-[var(--text-muted)] line-clamp-2 leading-relaxed font-medium">
                         {incident.summary}
                       </p>
+                      {incident.plain_english_report && (
+                        <div className="p-1.5 bg-[var(--bg-surface-elevated)] border border-[var(--border-color)] text-[10px] text-[var(--text-dim)] italic line-clamp-2">
+                          <span className="font-bold not-italic text-[#00C8FF]">Auto Report: </span>
+                          {incident.plain_english_report}
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-1.5 mt-1">
                         {incident.tactics.slice(0, 4).map((t) => (
                           <span

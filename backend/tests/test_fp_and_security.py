@@ -124,3 +124,4 @@ def test_path_reconstructor_with_network_threat():
     assert len(steps) == 1
     assert steps[0].network_threat is not None
     assert steps[0].network_threat.threat_category == "MALICIOUS_DROP_SITE"
+
