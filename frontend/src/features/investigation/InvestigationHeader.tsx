@@ -6,7 +6,7 @@ import { IncidentDetail } from "@/lib/api/types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatTimestamp } from "@/lib/utils/formatters";
-import { Radio, AlertTriangle, ChevronDown, ChevronUp, Layers } from "lucide-react";
+import { Radio, AlertTriangle, ChevronDown, ChevronUp, Layers, ShieldCheck, CheckCircle2 } from "lucide-react";
 
 interface InvestigationHeaderProps {
   incident: IncidentDetail;
@@ -36,6 +36,23 @@ export function InvestigationHeader({
           {incident.is_planted_match && (
             <span className="hidden sm:inline text-[9px] bg-[#B7FF3C] text-black border border-black px-1.5 py-0.5 font-extrabold shadow-[1px_1px_0px_#000] uppercase tracking-wider">
               PLANTED BENCHMARK
+            </span>
+          )}
+
+          {incident.fp_verification && (
+            <span
+              className={`hidden sm:inline-flex items-center gap-1 text-[9px] px-2 py-0.5 font-black uppercase tracking-wider border-2 shadow-[1px_1px_0px_rgba(0,0,0,0.5)] ${
+                incident.fp_verification.verdict === "CONFIRMED_MALICIOUS_ATTACK"
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/50"
+                  : incident.fp_verification.verdict === "BENIGN_ADMIN_ACTIVITY"
+                  ? "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/50"
+                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/50"
+              }`}
+            >
+              <ShieldCheck className="w-3 h-3" />
+              {incident.fp_verification.verdict === "CONFIRMED_MALICIOUS_ATTACK"
+                ? `VERIFIED ATTACK (${(incident.fp_verification.attack_confidence * 100).toFixed(0)}% CONF / ${(incident.fp_verification.false_positive_risk * 100).toFixed(0)}% FP RISK)`
+                : incident.fp_verification.verdict.replace(/_/g, " ")}
             </span>
           )}
 
@@ -132,6 +149,49 @@ export function InvestigationHeader({
               <span className="text-[#86D400] dark:text-[#B7FF3C] font-black text-xs block mt-0.5">{incident.steps_count} Reconstructed</span>
             </div>
           </div>
+
+          {/* False Positive Verification Details */}
+          {incident.fp_verification && (
+            <div className="p-3 border-2 border-[var(--border-color)] bg-[var(--bg-surface-elevated)] shadow-[2px_2px_0px_var(--border-color)] flex flex-col gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-subtle)] pb-2">
+                <span className="text-[10px] uppercase font-black text-[var(--text-primary)] flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                  {"// FALSE POSITIVE VERIFICATION & MULTI-SOURCE CORROBORATION"}
+                </span>
+                <div className="flex items-center gap-2 text-[10px] font-bold">
+                  <span>
+                    ATTACK CONFIDENCE:{" "}
+                    <strong className="text-[#00C8FF]">
+                      {(incident.fp_verification.attack_confidence * 100).toFixed(0)}%
+                    </strong>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    FP RISK:{" "}
+                    <strong className={incident.fp_verification.false_positive_risk < 0.20 ? "text-emerald-500" : "text-amber-500"}>
+                      {(incident.fp_verification.false_positive_risk * 100).toFixed(0)}%
+                    </strong>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    CORROBORATION SCORE:{" "}
+                    <strong className="text-[#86D400] dark:text-[#B7FF3C]">
+                      {(incident.fp_verification.corroboration_score * 100).toFixed(0)}%
+                    </strong>
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1 text-[11px] text-[var(--text-muted)]">
+                {incident.fp_verification.explanation_points.map((point, idx) => (
+                  <div key={idx} className="flex items-start gap-1.5 font-medium">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
+                    <span>{point}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Data Quality Caveats Warning Bar (if any) */}
           {incident.dq_caveats && incident.dq_caveats.length > 0 && (
