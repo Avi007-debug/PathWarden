@@ -21,6 +21,7 @@ wheels/
 *.egg
 .env
 .env.local
+!.env.example
 .venv
 venv/
 ENV/

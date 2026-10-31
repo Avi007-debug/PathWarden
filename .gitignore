@@ -19,6 +19,9 @@ dist/
 .env.test
 .env.production
 *.env
+!.env.example
+!frontend/.env.example
+!backend/.env.example
 
 # Large raw logs, EDR dumps & manifests
 *.log

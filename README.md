@@ -4,6 +4,8 @@
 
 PathWarden is an evidence-driven cyberattack reconstruction and threat investigation platform. It transforms large volumes of heterogeneous security logs into correlated incidents, ordered attack paths, explainable detections, and evidence-backed reachability assessments.
 
+🌐 **Live Production Deployment**: [https://path-warden-delta.vercel.app](https://path-warden-delta.vercel.app/)
+
 ---
 
 ## 1. Product Capabilities & Architecture
