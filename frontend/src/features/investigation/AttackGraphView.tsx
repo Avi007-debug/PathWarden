@@ -131,29 +131,38 @@ export function AttackGraphView({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Transform steps into Cytoscape nodes
-    const cyNodes = steps.map((step) => ({
-      data: {
-        id: step.step_uid,
-        label: `${step.mitre.technique_id}\n${step.mitre.technique_name}\n[${step.host_name}]`,
-        severity: step.severity,
-        order: step.order_index,
-        tactic: step.mitre.tactic,
-        is_uncertain: String(step.is_uncertain || false),
-      },
-    }));
+    // Transform steps into Cytoscape nodes with full fallback safety
+    const cyNodes = steps.map((step) => {
+      const techId = step.mitre?.technique_id || (step as unknown as Record<string, string>).technique_id || "T1059";
+      const techName = step.mitre?.technique_name || (step as unknown as Record<string, string>).technique_name || "Execution";
+      const host = step.host_name || "host";
+      return {
+        data: {
+          id: step.step_uid,
+          label: `${techId}\n${techName}\n[${host}]`,
+          severity: step.severity || "HIGH",
+          order: step.order_index,
+          tactic: step.mitre?.tactic || (step as unknown as Record<string, string>).tactic || "Execution",
+          is_uncertain: String(step.is_uncertain || false),
+        },
+      };
+    });
 
-    // Transform edges into Cytoscape edges
-    const cyEdges = edges.map((edge) => ({
-      data: {
-        id: edge.edge_id,
-        source: edge.source_step_uid,
-        target: edge.target_step_uid,
-        relationship_type: edge.relationship_type.replace(/_/g, " "),
-        confidence: edge.confidence_category,
-        is_inferred: String(edge.is_inferred),
-      },
-    }));
+    const nodeIds = new Set(cyNodes.map((n) => n.data.id));
+
+    // Transform edges into Cytoscape edges - strictly filter out dangling endpoints
+    const cyEdges = edges
+      .filter((edge) => nodeIds.has(edge.source_step_uid) && nodeIds.has(edge.target_step_uid))
+      .map((edge) => ({
+        data: {
+          id: edge.edge_id,
+          source: edge.source_step_uid,
+          target: edge.target_step_uid,
+          relationship_type: (edge.relationship_type || "").replace(/_/g, " "),
+          confidence: edge.confidence_category || "STRONG",
+          is_inferred: String(edge.is_inferred || false),
+        },
+      }));
 
     const cy = cytoscape({
       container: containerRef.current,

@@ -14,7 +14,7 @@ import { GitFork, Clock, AlertCircle } from "lucide-react";
 
 function IncidentInvestigationContent() {
   const params = useParams();
-  const id = (params?.id as string) || "INC-2026-0841";
+  const id = (params?.id as string) || "INC-001";
   const { isDemoMode, setSelectedIncidentId } = useApp();
 
   const [incident, setIncident] = useState<IncidentDetail | null>(null);
