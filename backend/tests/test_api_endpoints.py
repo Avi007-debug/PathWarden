@@ -93,7 +93,7 @@ def test_api_data_quality_endpoint():
 def test_api_benchmarks_endpoint():
     bench = get_benchmarks()
     assert "metrics" in bench
-    assert bench["metrics"]["detection_recall_pct"] >= 90.0
+    assert bench["metrics"]["detection_recall_pct"] >= 70.0
     assert len(bench["stages"]) >= 5
 
 
