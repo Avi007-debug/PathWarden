@@ -58,6 +58,14 @@ export function AttackGraphView({
   const [textScale, setTextScale] = useState<TextScale>("standard");
   const [legendMinimized, setLegendMinimized] = useState<boolean>(false);
 
+  // Keep stable callback refs so Cytoscape instance is never destroyed when selection changes
+  const onSelectStepRef = useRef(onSelectStep);
+  const onSelectEdgeRef = useRef(onSelectEdge);
+  useEffect(() => {
+    onSelectStepRef.current = onSelectStep;
+    onSelectEdgeRef.current = onSelectEdge;
+  });
+
   // Safe graph auto-fit helper that preserves node readability and avoids giant over-zoomed nodes
   const fitGraph = React.useCallback((padding = 35) => {
     const cy = cyRef.current;
@@ -197,8 +205,8 @@ export function AttackGraphView({
       const node = evt.target;
       const stepUid = node.id();
       const step = steps.find((s) => s.step_uid === stepUid) || null;
-      onSelectStep(step);
-      onSelectEdge(null);
+      onSelectStepRef.current(step);
+      onSelectEdgeRef.current(null);
     });
 
     // Edge selection
@@ -206,15 +214,15 @@ export function AttackGraphView({
       const edge = evt.target;
       const edgeId = edge.id();
       const foundEdge = edges.find((e) => e.edge_id === edgeId) || null;
-      onSelectEdge(foundEdge);
-      onSelectStep(null);
+      onSelectEdgeRef.current(foundEdge);
+      onSelectStepRef.current(null);
     });
 
     // Background tap clears selection
     cy.on("tap", (evt: EventObject) => {
       if (evt.target === cy) {
-        onSelectStep(null);
-        onSelectEdge(null);
+        onSelectStepRef.current(null);
+        onSelectEdgeRef.current(null);
       }
     });
 
@@ -222,7 +230,7 @@ export function AttackGraphView({
       cy.destroy();
       cyRef.current = null;
     };
-  }, [steps, edges, layoutName, theme, textScale, onSelectStep, onSelectEdge]);
+  }, [steps, edges, layoutName, theme, textScale]);
 
   // Sync external selection with cytoscape selection
   useEffect(() => {
@@ -382,14 +390,15 @@ export function AttackGraphView({
         <button
           onClick={toggleFullscreen}
           className={cn(
-            "p-1.5 border transition-all cursor-pointer",
+            "px-2 py-1 border transition-all cursor-pointer flex items-center gap-1 font-mono text-[10px] font-bold uppercase",
             isFullscreen
               ? "text-black bg-[#B7FF3C] border-black font-bold shadow-[1px_1px_0px_#000]"
               : "text-[var(--text-muted)] hover:text-[#00C8FF] hover:bg-[var(--bg-surface-elevated)] border-[var(--border-subtle)]"
           )}
-          title={isFullscreen ? "Exit Fullscreen (Esc)" : "Expand to Fullscreen"}
+          title={isFullscreen ? "Exit Fullscreen (Esc)" : "Enlarge Cytoscape Graph (Full Screen)"}
         >
           {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          <span className="hidden sm:inline">{isFullscreen ? "RESTORE" : "ENLARGE"}</span>
         </button>
         <button
           onClick={handleReset}

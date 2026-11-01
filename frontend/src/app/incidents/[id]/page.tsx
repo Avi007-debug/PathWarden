@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useParams } from "next/navigation";
 import { pathWardenApi } from "@/lib/api/client";
 import { IncidentDetail, AttackStep, AttackEdge } from "@/lib/api/types";
@@ -10,7 +10,8 @@ import { AttackGraphView } from "@/features/investigation/AttackGraphView";
 import { ChronologicalTimeline } from "@/features/investigation/ChronologicalTimeline";
 import { AttackStepDetail } from "@/features/investigation/AttackStepDetail";
 import { EvidenceDrawer } from "@/features/investigation/EvidenceDrawer";
-import { GitFork, Clock, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
+import { GitFork, Clock, AlertCircle, FileSearch, X } from "lucide-react";
 
 function IncidentInvestigationContent() {
   const params = useParams();
@@ -27,6 +28,7 @@ function IncidentInvestigationContent() {
   const [evidenceDrawerOpen, setEvidenceDrawerOpen] = useState(false);
   const [headerExpanded, setHeaderExpanded] = useState(false);
   const [isTimelineOpen, setIsTimelineOpen] = useState(true);
+  const [isTimelineEnlarged, setIsTimelineEnlarged] = useState(false);
 
   // Tab switch for mobile
   const [activeTab, setActiveTab] = useState<"graph" | "timeline">("graph");
@@ -61,19 +63,28 @@ function IncidentInvestigationContent() {
     };
   }, [id, isDemoMode, setSelectedIncidentId]);
 
-  const handleInspectStepEvidence = (step: AttackStep) => {
+  const handleInspectStepEvidence = useCallback((step: AttackStep) => {
     setSelectedStep(step);
     setSelectedEdge(null);
     setEvidenceDrawerOpen(true);
-  };
+  }, []);
 
-  const handleInspectEdgeEvidence = (edge: AttackEdge | null) => {
+  const handleInspectEdgeEvidence = useCallback((edge: AttackEdge | null) => {
     setSelectedEdge(edge);
     setSelectedStep(null);
     if (edge) {
       setEvidenceDrawerOpen(true);
     }
-  };
+  }, []);
+
+  const handleSelectStep = useCallback((step: AttackStep | null) => {
+    setSelectedStep(step);
+    setSelectedEdge(null);
+  }, []);
+
+  const handleToggleTimeline = useCallback(() => {
+    setIsTimelineOpen((prev) => !prev);
+  }, []);
 
   if (loading) {
     return (
@@ -142,7 +153,7 @@ function IncidentInvestigationContent() {
         {/* Left / Center: Interactive Attack Graph */}
         <div
           className={`flex-1 min-w-0 min-h-0 h-full flex flex-col relative ${
-            activeTab === "graph" ? "flex" : "hidden lg:flex"
+            isTimelineEnlarged ? "hidden" : activeTab === "graph" ? "flex" : "hidden lg:flex"
           }`}
         >
           <AttackGraphView
@@ -150,31 +161,105 @@ function IncidentInvestigationContent() {
             edges={incident.edges}
             selectedStepUid={selectedStep?.step_uid || null}
             selectedEdgeId={selectedEdge?.edge_id || null}
-            onSelectStep={(step) => {
-              setSelectedStep(step);
-              setSelectedEdge(null);
-            }}
+            onSelectStep={handleSelectStep}
             onSelectEdge={handleInspectEdgeEvidence}
             isTimelineOpen={isTimelineOpen}
-            onToggleTimeline={() => setIsTimelineOpen(!isTimelineOpen)}
+            onToggleTimeline={handleToggleTimeline}
           />
+
+          {/* Mobile Step Selection Drawer / Pill (allows quick inspection when on graph tab) */}
+          {selectedStep && activeTab === "graph" && (
+            <div className="lg:hidden absolute bottom-3 left-3 right-3 z-30 bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-3 shadow-[4px_4px_0px_#000] font-mono text-xs flex items-center justify-between">
+              <div className="min-w-0 flex-1 pr-2">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <Badge variant={selectedStep.severity === "CRITICAL" ? "critical" : "warning"}>
+                    STEP #{selectedStep.order_index}
+                  </Badge>
+                  <span className="font-bold text-[var(--text-primary)] truncate">{selectedStep.mitre.technique_name}</span>
+                </div>
+                <span className="text-[10px] text-[var(--text-muted)] block truncate">{selectedStep.host_name} // {selectedStep.user_name}</span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => setActiveTab("timeline")}
+                  className="px-2 py-1 bg-[#00C8FF] text-black font-bold text-[10px] uppercase border border-black cursor-pointer"
+                >
+                  VIEW TIMELINE
+                </button>
+                <button
+                  onClick={() => handleInspectStepEvidence(selectedStep)}
+                  className="px-2 py-1 bg-[#2563FF] text-white font-bold text-[10px] uppercase border border-black cursor-pointer"
+                >
+                  EVIDENCE
+                </button>
+                <button
+                  onClick={() => setSelectedStep(null)}
+                  className="p-1 text-[var(--text-muted)] hover:text-[#FF334B] cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Pane: Chronological Timeline + Selected Step Details */}
         {isTimelineOpen && (
           <div
-            className={`w-full lg:w-[380px] xl:w-[440px] border-l-2 border-[var(--border-color)] flex flex-col shrink-0 h-full min-h-0 overflow-hidden ${
-              activeTab === "timeline" ? "flex" : "hidden lg:flex"
+            className={`border-[var(--border-color)] flex flex-col shrink-0 h-full min-h-0 overflow-hidden ${
+              isTimelineEnlarged
+                ? "w-full flex-1 border-0 flex"
+                : `w-full lg:w-[380px] xl:w-[440px] border-l-2 ${activeTab === "timeline" ? "flex" : "hidden lg:flex"}`
             }`}
           >
-            {/* Selected Step Detail Panel (Docked at top of right rail if step is selected) */}
-            {selectedStep && (
-              <div className="shrink-0 max-h-[45%] overflow-y-auto border-b-2 border-[var(--border-color)]">
+            {/* Docked Inspector Panel: Always stable, never collapses abruptly */}
+            {selectedStep ? (
+              <div className="shrink-0 max-h-[48%] overflow-y-auto border-b-2 border-[var(--border-color)]">
                 <AttackStepDetail
                   step={selectedStep}
                   onClose={() => setSelectedStep(null)}
                   onInspectEvidence={handleInspectStepEvidence}
                 />
+              </div>
+            ) : selectedEdge ? (
+              <div className="shrink-0 border-b-2 border-[var(--border-color)] bg-[var(--bg-surface)] p-3.5 font-mono text-xs flex flex-col gap-2 shadow-[2px_2px_0px_var(--border-color)]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-black text-[var(--text-primary)]">
+                    <GitFork className="w-3.5 h-3.5 text-[#00C8FF]" />
+                    <span>EDGE INSPECTION // {selectedEdge.edge_id}</span>
+                  </div>
+                  <button onClick={() => setSelectedEdge(null)} className="p-0.5 text-[var(--text-muted)] hover:text-[#FF334B] cursor-pointer">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="text-[11px] font-bold text-[#00C8FF] uppercase">
+                  {selectedEdge.relationship_type.replace(/_/g, " ")}
+                </div>
+                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">{selectedEdge.explanation}</p>
+                <div className="flex items-center justify-between text-[10px] pt-1.5 border-t border-[var(--border-subtle)]">
+                  <span className="font-bold text-[var(--text-dim)]">
+                    CONFIDENCE: {selectedEdge.confidence_category} ({((selectedEdge.relationship_score || 0.85) * 100).toFixed(0)}%)
+                  </span>
+                  <button
+                    onClick={() => handleInspectEdgeEvidence(selectedEdge)}
+                    className="text-[#00C8FF] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <FileSearch className="w-3 h-3" />
+                    <span>EVIDENCE ({selectedEdge.evidence_event_uids?.length || 0})</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 border-b-2 border-[var(--border-color)] bg-[var(--bg-surface-elevated)] flex items-center justify-between font-mono text-xs shrink-0 select-none">
+                <div className="flex items-center gap-2">
+                  <FileSearch className="w-3.5 h-3.5 text-[#00C8FF]" />
+                  <span className="font-bold text-[var(--text-muted)] text-[10px] tracking-wide">
+                    CLICK ANY STEP OR NODE TO INSPECT DETAILS
+                  </span>
+                </div>
+                <span className="text-[9px] text-[var(--text-dim)] uppercase bg-[var(--bg-surface)] px-1.5 py-0.5 border border-[var(--border-color)] font-bold">
+                  INSPECTOR READY
+                </span>
               </div>
             )}
 
@@ -183,11 +268,10 @@ function IncidentInvestigationContent() {
               <ChronologicalTimeline
                 steps={incident.steps}
                 selectedStepUid={selectedStep?.step_uid || null}
-                onSelectStep={(step) => {
-                  setSelectedStep(step);
-                  setSelectedEdge(null);
-                }}
+                onSelectStep={handleSelectStep}
                 onInspectEvidence={handleInspectStepEvidence}
+                isEnlarged={isTimelineEnlarged}
+                onToggleEnlarge={() => setIsTimelineEnlarged(!isTimelineEnlarged)}
               />
             </div>
           </div>

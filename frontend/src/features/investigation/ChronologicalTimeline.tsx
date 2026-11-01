@@ -4,7 +4,7 @@ import React from "react";
 import { AttackStep } from "@/lib/api/types";
 import { formatTimeOnly } from "@/lib/utils/formatters";
 import { Badge } from "@/components/ui/Badge";
-import { Clock, Terminal, User, Server, FileSearch } from "lucide-react";
+import { Clock, Terminal, User, Server, FileSearch, Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 interface ChronologicalTimelineProps {
@@ -12,6 +12,8 @@ interface ChronologicalTimelineProps {
   selectedStepUid: string | null;
   onSelectStep: (step: AttackStep) => void;
   onInspectEvidence: (step: AttackStep) => void;
+  isEnlarged?: boolean;
+  onToggleEnlarge?: () => void;
 }
 
 export function ChronologicalTimeline({
@@ -19,6 +21,8 @@ export function ChronologicalTimeline({
   selectedStepUid,
   onSelectStep,
   onInspectEvidence,
+  isEnlarged = false,
+  onToggleEnlarge,
 }: ChronologicalTimelineProps) {
   return (
     <div className="flex flex-col border-2 border-[var(--border-color)] bg-[var(--bg-surface)] shadow-[4px_4px_0px_var(--border-color)] hover:shadow-[6px_6px_0px_var(--border-color)] transition-all h-full overflow-hidden select-none">
@@ -30,9 +34,26 @@ export function ChronologicalTimeline({
             Chronological Attack Timeline
           </h3>
         </div>
-        <span className="font-mono text-[10px] font-bold text-[var(--text-dim)] uppercase bg-[var(--bg-surface)] px-2 py-0.5 border border-[var(--border-color)]">
-          {steps.length} Steps
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[10px] font-bold text-[var(--text-dim)] uppercase bg-[var(--bg-surface)] px-2 py-0.5 border border-[var(--border-color)]">
+            {steps.length} Steps
+          </span>
+          {onToggleEnlarge && (
+            <button
+              onClick={onToggleEnlarge}
+              className={cn(
+                "px-2 py-0.5 border text-xs font-mono font-bold flex items-center gap-1 transition-all cursor-pointer shadow-[2px_2px_0px_var(--border-color)]",
+                isEnlarged
+                  ? "bg-[#B7FF3C] text-black border-black shadow-[2px_2px_0px_#000]"
+                  : "bg-[var(--bg-surface)] text-[var(--text-muted)] hover:text-[#00C8FF] border-[var(--border-color)]"
+              )}
+              title={isEnlarged ? "Restore Split View" : "Enlarge Timeline (Full Workspace)"}
+            >
+              {isEnlarged ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              <span className="text-[10px] uppercase font-bold">{isEnlarged ? "SPLIT VIEW" : "ENLARGE"}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Steps List */}
