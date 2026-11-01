@@ -38,7 +38,7 @@ logger = get_logger("AgenticReporter")
 
 _OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 _LLM_MODEL = os.environ.get("LLM_MODEL", "qwen2.5-coder:1.5b")
-_LLM_TIMEOUT = float(os.environ.get("LLM_TIMEOUT", "2.5"))
+_LLM_TIMEOUT = float(os.environ.get("LLM_TIMEOUT", "35.0"))
 
 
 def _detect_installed_model() -> str:
@@ -46,55 +46,73 @@ def _detect_installed_model() -> str:
     configured = os.environ.get("LLM_MODEL")
     if configured:
         return configured
-    try:
-        url = f"{_OLLAMA_HOST.rstrip('/')}/api/tags"
-        req = urllib.request.Request(url, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=1.0) as resp:
-            if resp.status == 200:
-                body = json.loads(resp.read().decode("utf-8"))
-                models = [m.get("name", "") for m in body.get("models", [])]
-                for candidate in ["qwen2.5-coder:1.5b", "qwen2.5-coder", "qwen2.5:1.5b", "qwen2.5", "llama3.2:1b", "llama3.2"]:
-                    for m in models:
-                        if candidate in m.lower():
-                            return m
-                if models:
-                    return models[0]
-    except Exception:
-        pass
+    candidate_hosts = [_OLLAMA_HOST]
+    if "localhost" in _OLLAMA_HOST or "127.0.0.1" in _OLLAMA_HOST:
+        candidate_hosts.append("http://host.docker.internal:11434")
+
+    for host in candidate_hosts:
+        try:
+            url = f"{host.rstrip('/')}/api/tags"
+            req = urllib.request.Request(url, headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=2.0) as resp:
+                if resp.status == 200:
+                    body = json.loads(resp.read().decode("utf-8"))
+                    models = [m.get("name", "") for m in body.get("models", [])]
+                    for candidate in ["qwen2.5-coder:1.5b", "qwen2.5-coder", "qwen2.5:1.5b", "qwen2.5", "llama3.2:1b", "llama3.2"]:
+                        for m in models:
+                            if candidate in m.lower():
+                                return m
+                    if models:
+                        return models[0]
+        except Exception:
+            pass
     return "qwen2.5-coder:1.5b"
 
 
 def _query_local_gpu_llm(prompt: str, model: Optional[str] = None) -> Optional[str]:
     """Query an on-device local LLM server running on GPU via Ollama API."""
     target_model = model or _detect_installed_model()
-    url = f"{_OLLAMA_HOST.rstrip('/')}/api/generate"
+    candidate_hosts = [_OLLAMA_HOST]
+    if "localhost" in _OLLAMA_HOST or "127.0.0.1" in _OLLAMA_HOST:
+        candidate_hosts.append("http://host.docker.internal:11434")
+
     payload = json.dumps({
         "model": target_model,
         "prompt": prompt,
         "stream": False,
         "options": {
             "temperature": 0.2,
-            "num_predict": 700,
+            "num_predict": 350,
         }
     }).encode("utf-8")
 
-    req = urllib.request.Request(
-        url,
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
+    last_exc = None
+    for host in candidate_hosts:
+        url = f"{host.rstrip('/')}/api/generate"
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=_LLM_TIMEOUT) as resp:
+                if resp.status == 200:
+                    body = json.loads(resp.read().decode("utf-8"))
+                    response_text = body.get("response", "").strip()
+                    if response_text:
+                        logger.info("Successfully generated report using local GPU LLM: %s via %s", target_model, host)
+                        return response_text
+        except Exception as exc:
+            last_exc = exc
 
-    try:
-        with urllib.request.urlopen(req, timeout=_LLM_TIMEOUT) as resp:
-            if resp.status == 200:
-                body = json.loads(resp.read().decode("utf-8"))
-                response_text = body.get("response", "").strip()
-                if response_text:
-                    logger.info("Successfully generated report using local GPU LLM: %s", model)
-                    return response_text
-    except Exception as exc:
-        logger.debug("Local GPU LLM not active or timed out (%s): %s. Using On-Device Agentic Engine.", url, exc)
+    if last_exc:
+        logger.warning(
+            "Local GPU LLM (%s) query failed (%s). If Ollama is running, verify with 'ollama run %s'. Falling back to On-Device Tri-Agent Engine.",
+            target_model,
+            last_exc,
+            target_model,
+        )
     return None
 
 
@@ -255,7 +273,7 @@ Include:
         "incident_id": inc_id,
         "severity": severity,
         "risk_score": risk_score,
-        "plain_english_report": executive_briefing,
+        "plain_english_report": llm_output or executive_briefing,
         "report_markdown": full_markdown,
         "raw_alerts_merged": raw_alerts,
         "alert_compression_pct": reduction_pct,

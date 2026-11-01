@@ -74,7 +74,8 @@ async function request<T>(
   const url = `${baseUrl}${endpoint}`;
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    const timeoutMs = endpoint.includes("/report") ? 45000 : 12000;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     const res = await fetch(url, {
       ...options,
