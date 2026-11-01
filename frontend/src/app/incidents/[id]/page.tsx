@@ -12,7 +12,8 @@ import { AttackStepDetail } from "@/features/investigation/AttackStepDetail";
 import { EvidenceDrawer } from "@/features/investigation/EvidenceDrawer";
 import { ExecutiveReportModal } from "@/features/investigation/ExecutiveReportModal";
 import { Badge } from "@/components/ui/Badge";
-import { GitFork, Clock, AlertCircle, FileSearch, X, Maximize2, Minimize2, Sparkles } from "lucide-react";
+import { GitFork, Clock, AlertCircle, FileSearch, X, Maximize2, Minimize2, Sparkles, Columns } from "lucide-react";
+import { cn } from "@/lib/utils/cn";
 
 function IncidentInvestigationContent() {
   const params = useParams();
@@ -30,7 +31,13 @@ function IncidentInvestigationContent() {
   const [headerExpanded, setHeaderExpanded] = useState(false);
   const [isTimelineOpen, setIsTimelineOpen] = useState(true);
   const [isWorkspaceEnlarged, setIsWorkspaceEnlarged] = useState(false);
+  const [workspaceViewMode, setWorkspaceViewMode] = useState<"dual" | "graph" | "timeline">("dual");
   const [reportModalOpen, setReportModalOpen] = useState(false);
+
+  const handleOpenWorkspace = useCallback((mode: "dual" | "graph" | "timeline" = "dual") => {
+    setWorkspaceViewMode(mode);
+    setIsWorkspaceEnlarged(true);
+  }, []);
 
   // Tab switch for mobile
   const [activeTab, setActiveTab] = useState<"graph" | "timeline">("graph");
@@ -139,17 +146,17 @@ function IncidentInvestigationContent() {
         onToggleExpanded={() => setHeaderExpanded(!headerExpanded)}
         onOpenReportModal={() => setReportModalOpen(true)}
         isWorkspaceEnlarged={isWorkspaceEnlarged}
-        onToggleWorkspaceEnlarge={() => setIsWorkspaceEnlarged(!isWorkspaceEnlarged)}
+        onToggleWorkspaceEnlarge={() => isWorkspaceEnlarged ? setIsWorkspaceEnlarged(false) : handleOpenWorkspace("dual")}
       />
 
-      {/* Fullscreen Side-by-Side Canvas Overlay (Opens Cytoscape & Timeline in Full Window) */}
+      {/* Fullscreen Workspace Modal / Window Overlay */}
       {isWorkspaceEnlarged && (
         <div className="fixed inset-0 z-50 bg-[var(--bg-canvas)] flex flex-col p-2.5 sm:p-3 font-mono select-none overflow-hidden animate-fadeIn">
           {/* Fullscreen Workspace Header Bar */}
-          <div className="p-3 bg-[var(--bg-surface)] border-2 border-[var(--border-color)] shadow-[4px_4px_0px_#000] flex items-center justify-between gap-3 mb-2.5 shrink-0">
+          <div className="p-3 bg-[var(--bg-surface)] border-2 border-[var(--border-color)] shadow-[4px_4px_0px_#000] flex items-center justify-between gap-3 mb-2.5 shrink-0 flex-wrap">
             <div className="flex items-center flex-wrap gap-2 sm:gap-2.5">
               <span className="px-2.5 py-0.5 bg-[#B7FF3C] text-black font-black text-xs uppercase border border-black shadow-[1px_1px_0px_#000]">
-                CANVAS ENLARGED
+                NEW WINDOW
               </span>
               <span className="font-black text-sm text-[var(--text-primary)]">
                 {incident.incident_id}
@@ -163,6 +170,49 @@ function IncidentInvestigationContent() {
               <span className="hidden sm:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 bg-purple-500/15 text-purple-400 border border-purple-500/40 font-bold uppercase">
                 [B-3] {incident.raw_alerts_merged || incident.detection_count || 14} ALERTS MERGED
               </span>
+            </div>
+
+            {/* View Mode Switcher in the New Window Overlay */}
+            <div className="flex items-center gap-1 bg-[var(--bg-surface-elevated)] p-1 border-2 border-[var(--border-color)]">
+              <button
+                onClick={() => setWorkspaceViewMode("dual")}
+                className={cn(
+                  "px-2.5 py-1 text-xs font-bold uppercase transition-all cursor-pointer flex items-center gap-1.5",
+                  workspaceViewMode === "dual"
+                    ? "bg-[#2563FF] text-white border border-black shadow-[1px_1px_0px_#000]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                )}
+                title="View Cytoscape Graph & Timeline Side-by-Side"
+              >
+                <Columns className="w-3.5 h-3.5" />
+                <span>DUAL VIEW</span>
+              </button>
+              <button
+                onClick={() => setWorkspaceViewMode("graph")}
+                className={cn(
+                  "px-2.5 py-1 text-xs font-bold uppercase transition-all cursor-pointer flex items-center gap-1.5",
+                  workspaceViewMode === "graph"
+                    ? "bg-[#2563FF] text-white border border-black shadow-[1px_1px_0px_#000]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                )}
+                title="View Cytoscape Graph Only in New Window"
+              >
+                <GitFork className="w-3.5 h-3.5" />
+                <span>CYTOSCAPE ONLY</span>
+              </button>
+              <button
+                onClick={() => setWorkspaceViewMode("timeline")}
+                className={cn(
+                  "px-2.5 py-1 text-xs font-bold uppercase transition-all cursor-pointer flex items-center gap-1.5",
+                  workspaceViewMode === "timeline"
+                    ? "bg-[#2563FF] text-white border border-black shadow-[1px_1px_0px_#000]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                )}
+                title="View Chronological Timeline Only in New Window"
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>TIMELINE ONLY</span>
+              </button>
             </div>
 
             <div className="flex items-center gap-2">
@@ -179,51 +229,67 @@ function IncidentInvestigationContent() {
                 title="Exit Fullscreen (Esc)"
               >
                 <Minimize2 className="w-4 h-4" />
-                <span>EXIT FULLSCREEN [ESC]</span>
+                <span>CLOSE [ESC]</span>
               </button>
             </div>
           </div>
 
-          {/* Fullscreen Side-by-Side Main Area */}
+          {/* New Window Main Area */}
           <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2.5 overflow-hidden">
-            {/* Left Side: Expanded Cytoscape Graph */}
-            <div className="flex-1 min-w-0 min-h-0 h-full relative">
-              <AttackGraphView
-                steps={incident.steps}
-                edges={incident.edges}
-                selectedStepUid={selectedStep?.step_uid || null}
-                selectedEdgeId={selectedEdge?.edge_id || null}
-                onSelectStep={handleSelectStep}
-                onSelectEdge={handleInspectEdgeEvidence}
-                isTimelineOpen={true}
-                isWorkspaceEnlarged={true}
-                onToggleWorkspaceEnlarge={() => setIsWorkspaceEnlarged(false)}
-                onOpenReportModal={() => setReportModalOpen(true)}
-              />
-            </div>
-
-            {/* Right Side: Step Inspector + Full-Height Timeline */}
-            <div className="w-full lg:w-[460px] xl:w-[520px] shrink-0 h-full flex flex-col min-h-0 border-2 border-[var(--border-color)] bg-[var(--bg-surface)] shadow-[4px_4px_0px_var(--border-color)] overflow-hidden">
-              {selectedStep && (
-                <div className="shrink-0 max-h-[45%] overflow-y-auto border-b-2 border-[var(--border-color)]">
-                  <AttackStepDetail
-                    step={selectedStep}
-                    onClose={() => setSelectedStep(null)}
-                    onInspectEvidence={handleInspectStepEvidence}
-                  />
-                </div>
-              )}
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <ChronologicalTimeline
+            {/* Cytoscape Graph (rendered when in "dual" or "graph" mode) */}
+            {(workspaceViewMode === "dual" || workspaceViewMode === "graph") && (
+              <div className="flex-1 min-w-0 min-h-0 h-full relative">
+                <AttackGraphView
                   steps={incident.steps}
+                  edges={incident.edges}
                   selectedStepUid={selectedStep?.step_uid || null}
+                  selectedEdgeId={selectedEdge?.edge_id || null}
                   onSelectStep={handleSelectStep}
-                  onInspectEvidence={handleInspectStepEvidence}
-                  isEnlarged={true}
-                  onToggleEnlarge={() => setIsWorkspaceEnlarged(false)}
+                  onSelectEdge={handleInspectEdgeEvidence}
+                  isTimelineOpen={workspaceViewMode === "dual"}
+                  isWorkspaceEnlarged={true}
+                  onToggleWorkspaceEnlarge={() => setIsWorkspaceEnlarged(false)}
+                  onOpenReportModal={() => setReportModalOpen(true)}
                 />
               </div>
-            </div>
+            )}
+
+            {/* Timeline / Inspector (rendered when in "dual" or "timeline" mode) */}
+            {(workspaceViewMode === "dual" || workspaceViewMode === "timeline") && (
+              <div
+                className={cn(
+                  "shrink-0 h-full flex flex-col min-h-0 border-2 border-[var(--border-color)] bg-[var(--bg-surface)] shadow-[4px_4px_0px_var(--border-color)] overflow-hidden",
+                  workspaceViewMode === "dual"
+                    ? "w-full lg:w-[460px] xl:w-[520px]"
+                    : "flex-1 w-full"
+                )}
+              >
+                {selectedStep && (
+                  <div
+                    className={cn(
+                      "shrink-0 overflow-y-auto border-b-2 border-[var(--border-color)]",
+                      workspaceViewMode === "timeline" ? "max-h-[35%]" : "max-h-[45%]"
+                    )}
+                  >
+                    <AttackStepDetail
+                      step={selectedStep}
+                      onClose={() => setSelectedStep(null)}
+                      onInspectEvidence={handleInspectStepEvidence}
+                    />
+                  </div>
+                )}
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                  <ChronologicalTimeline
+                    steps={incident.steps}
+                    selectedStepUid={selectedStep?.step_uid || null}
+                    onSelectStep={handleSelectStep}
+                    onInspectEvidence={handleInspectStepEvidence}
+                    isEnlarged={true}
+                    onToggleEnlarge={() => setIsWorkspaceEnlarged(false)}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -271,8 +337,8 @@ function IncidentInvestigationContent() {
             onSelectEdge={handleInspectEdgeEvidence}
             isTimelineOpen={isTimelineOpen}
             onToggleTimeline={handleToggleTimeline}
-            isWorkspaceEnlarged={isWorkspaceEnlarged}
-            onToggleWorkspaceEnlarge={() => setIsWorkspaceEnlarged(!isWorkspaceEnlarged)}
+            isWorkspaceEnlarged={false}
+            onToggleWorkspaceEnlarge={() => handleOpenWorkspace("dual")}
             onOpenReportModal={() => setReportModalOpen(true)}
           />
 
@@ -378,7 +444,7 @@ function IncidentInvestigationContent() {
                 onSelectStep={handleSelectStep}
                 onInspectEvidence={handleInspectStepEvidence}
                 isEnlarged={false}
-                onToggleEnlarge={() => setIsWorkspaceEnlarged(true)}
+                onToggleEnlarge={() => handleOpenWorkspace("timeline")}
               />
             </div>
           </div>

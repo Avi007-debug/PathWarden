@@ -6,7 +6,7 @@ import { IncidentDetail } from "@/lib/api/types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatTimestamp } from "@/lib/utils/formatters";
-import { Radio, AlertTriangle, ChevronDown, ChevronUp, Layers, ShieldCheck, CheckCircle2, FileText, Sparkles, Maximize2, Minimize2 } from "lucide-react";
+import { Radio, AlertTriangle, ChevronDown, ChevronUp, Layers, ShieldCheck, CheckCircle2, FileText, Sparkles, Maximize2, Minimize2, Columns } from "lucide-react";
 
 interface InvestigationHeaderProps {
   incident: IncidentDetail;
@@ -120,10 +120,10 @@ export function InvestigationHeader({
             <button
               onClick={onToggleWorkspaceEnlarge}
               className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black uppercase border-2 border-[var(--border-color)] bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] hover:border-[#00C8FF] hover:text-[#00C8FF] shadow-[2px_2px_0px_var(--border-color)] transition-all cursor-pointer"
-              title={isWorkspaceEnlarged ? "Restore Standard View (Esc)" : "Enlarge Cytoscape & Timeline Full Window (Side-by-Side)"}
+              title={isWorkspaceEnlarged ? "Restore Standard View (Esc)" : "Open Cytoscape & Timeline in New Window Modal (Side-by-Side)"}
             >
-              {isWorkspaceEnlarged ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{isWorkspaceEnlarged ? "RESTORE" : "ENLARGE CANVAS"}</span>
+              {isWorkspaceEnlarged ? <Minimize2 className="w-3.5 h-3.5" /> : <Columns className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">{isWorkspaceEnlarged ? "RESTORE" : "DUAL WINDOW"}</span>
             </button>
           )}
 

@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
+  Columns,
 } from "lucide-react";
 import { AttackStep, AttackEdge } from "@/lib/api/types";
 import { getCytoscapeStyles, TextScale } from "@/lib/utils/cytoscape-theme";
@@ -394,19 +395,32 @@ export function AttackGraphView({
         >
           <Focus className="w-3.5 h-3.5" />
         </button>
+        {/* Enlarge Only Graph Fully */}
         <button
-          onClick={onToggleWorkspaceEnlarge || toggleFullscreen}
+          onClick={toggleFullscreen}
           className={cn(
             "px-2 py-1 border transition-all cursor-pointer flex items-center gap-1 font-mono text-[10px] font-bold uppercase",
-            (isWorkspaceEnlarged || isFullscreen)
-              ? "text-black bg-[#B7FF3C] border-black font-bold shadow-[1px_1px_0px_#000]"
+            isFullscreen
+              ? "text-white bg-[#FF334B] border-black font-bold shadow-[1px_1px_0px_#000]"
               : "text-[var(--text-muted)] hover:text-[#00C8FF] hover:bg-[var(--bg-surface-elevated)] border-[var(--border-subtle)]"
           )}
-          title={(isWorkspaceEnlarged || isFullscreen) ? "Restore Standard View (Esc)" : "Enlarge Cytoscape & Timeline Full Window (Side-by-Side)"}
+          title={isFullscreen ? "Exit Fullscreen Graph (Esc)" : "Enlarge Only Graph Fully (Fullscreen)"}
         >
-          {(isWorkspaceEnlarged || isFullscreen) ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-          <span className="hidden sm:inline">{(isWorkspaceEnlarged || isFullscreen) ? "RESTORE" : "ENLARGE"}</span>
+          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          <span className="hidden sm:inline">{isFullscreen ? "EXIT GRAPH" : "ENLARGE GRAPH"}</span>
         </button>
+
+        {/* Dual Window Mode (Cytoscape + Timeline Side-by-Side) */}
+        {onToggleWorkspaceEnlarge && !isWorkspaceEnlarged && (
+          <button
+            onClick={onToggleWorkspaceEnlarge}
+            className="px-2 py-1 border transition-all cursor-pointer flex items-center gap-1 font-mono text-[10px] font-bold uppercase text-[var(--text-muted)] hover:text-[#00C8FF] hover:bg-[var(--bg-surface-elevated)] border-[var(--border-subtle)]"
+            title="Open Cytoscape & Timeline in New Window Modal (Side-by-Side)"
+          >
+            <Columns className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">DUAL WINDOW</span>
+          </button>
+        )}
 
         {onOpenReportModal && (
           <button
