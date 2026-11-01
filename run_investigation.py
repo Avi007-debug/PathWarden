@@ -141,13 +141,7 @@ def _worker_process_file_slice(
             continue
         line_num = (start_byte // 100) + offset
 
-        if is_text_log or not line.startswith("{"):
-            parsed = text_parser.parse_record(line)
-            if parsed.get("parse_status") not in ["PARSED", "PARTIAL"]:
-                continue
-            adapted = network_adapter.adapt(parsed)
-            source_type = "network_firewall"
-        else:
+        if line.startswith("{"):
             parsed = json_parser.parse_record(line)
             if parsed.get("parse_status") != "PARSED":
                 continue
@@ -160,6 +154,12 @@ def _worker_process_file_slice(
             else:
                 adapted = endpoint_adapter.adapt(parsed)
                 source_type = "microsoft_sysmon"
+        else:
+            parsed = text_parser.parse_record(line)
+            if parsed.get("parse_status") not in ["PARSED", "PARTIAL"]:
+                continue
+            adapted = network_adapter.adapt(parsed)
+            source_type = "network_firewall"
 
         canonical = normalizer.normalize(
             adapter_record=adapted,

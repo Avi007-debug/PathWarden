@@ -2,9 +2,13 @@
 node_modules/
 .pnp
 .pnp.js
+__pycache__/
+*.pyc
 
 # Testing & Coverage
 coverage/
+.pytest_cache/
+*.py[cod]
 
 # Next.js & Production Build
 .next/
