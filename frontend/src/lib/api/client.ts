@@ -17,6 +17,7 @@ import {
 import {
   DEMO_INCIDENTS,
   DEMO_INCIDENT_DETAIL,
+  DEMO_INCIDENT_GRAPHS,
   DEMO_REACHABILITY_ITEMS,
   DEMO_DATA_QUALITY_REPORT,
   DEMO_BENCHMARK_REPORT,
@@ -67,6 +68,7 @@ async function request<T>(
         "Content-Type": "application/json",
         Accept: "application/json",
         "ngrok-skip-browser-warning": "true",
+        "Bypass-Tunnel-Reminder": "true",
         ...(options?.headers || {}),
       },
     });
@@ -103,10 +105,8 @@ function getSyntheticResponse<T>(endpoint: string): T {
   }
   if (endpoint.startsWith("/incidents/") && endpoint.endsWith("/path")) {
     const id = endpoint.split("/")[2];
-    if (id === DEMO_INCIDENT_DETAIL.incident_id) {
-      return { steps: DEMO_INCIDENT_DETAIL.steps, edges: DEMO_INCIDENT_DETAIL.edges } as unknown as T;
-    }
-    return { steps: DEMO_INCIDENT_DETAIL.steps, edges: DEMO_INCIDENT_DETAIL.edges } as unknown as T;
+    const graph = DEMO_INCIDENT_GRAPHS[id] || { steps: DEMO_INCIDENT_DETAIL.steps, edges: DEMO_INCIDENT_DETAIL.edges };
+    return { steps: graph.steps, edges: graph.edges } as unknown as T;
   }
   if (endpoint.startsWith("/incidents/") && endpoint.endsWith("/reach")) {
     return DEMO_REACHABILITY_ITEMS as unknown as T;
@@ -114,10 +114,12 @@ function getSyntheticResponse<T>(endpoint: string): T {
   if (endpoint.startsWith("/incidents/")) {
     const id = endpoint.split("/")[2];
     const found = DEMO_INCIDENTS.find((i) => i.incident_id === id);
-    if (found && id === DEMO_INCIDENT_DETAIL.incident_id) {
-      return DEMO_INCIDENT_DETAIL as unknown as T;
-    }
-    return { ...(found || DEMO_INCIDENT_DETAIL), steps: DEMO_INCIDENT_DETAIL.steps, edges: DEMO_INCIDENT_DETAIL.edges } as unknown as T;
+    const graph = DEMO_INCIDENT_GRAPHS[id] || { steps: DEMO_INCIDENT_DETAIL.steps, edges: DEMO_INCIDENT_DETAIL.edges };
+    return {
+      ...(found || DEMO_INCIDENT_DETAIL),
+      steps: graph.steps,
+      edges: graph.edges,
+    } as unknown as T;
   }
   if (endpoint === "/data-quality") {
     return DEMO_DATA_QUALITY_REPORT as unknown as T;
@@ -215,6 +217,7 @@ export const pathWardenApi = {
       headers: {
         "Content-Type": "application/octet-stream",
         "ngrok-skip-browser-warning": "true",
+        "Bypass-Tunnel-Reminder": "true",
       },
       body: file,
     });
