@@ -6,7 +6,8 @@ import { Incident } from "@/lib/api/types";
 import { useApp } from "@/lib/context/AppContext";
 import { IncidentFilters } from "@/features/incidents/IncidentFilters";
 import { IncidentTable } from "@/features/incidents/IncidentTable";
-import { ShieldAlert, RefreshCw } from "lucide-react";
+import { ExecutiveReportModal } from "@/features/investigation/ExecutiveReportModal";
+import { ShieldAlert, RefreshCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Footer } from "@/components/layout/Footer";
 
@@ -15,6 +16,7 @@ export default function IncidentsPage() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reportIncident, setReportIncident] = useState<Incident | null>(null);
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -89,6 +91,19 @@ export default function IncidentsPage() {
           >
             Refresh
           </Button>
+
+          <button
+            onClick={() => {
+              const topInc = filteredIncidents[0] || incidents[0];
+              if (topInc) setReportIncident(topInc);
+            }}
+            disabled={incidents.length === 0}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-black uppercase border-2 border-black bg-[#B7FF3C] text-black shadow-[3px_3px_0px_#000] hover:bg-[#a3e635] hover:-translate-x-[1px] hover:-translate-y-[1px] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer disabled:opacity-50"
+            title="Generate Auto-Written Plain English Executive Report [Bonus B-2]"
+          >
+            <Sparkles className="w-4 h-4 fill-black/20" />
+            <span>GENERATE EXECUTIVE REPORT [B-2]</span>
+          </button>
         </div>
       </div>
 
@@ -118,9 +133,22 @@ export default function IncidentsPage() {
             Failed to load incidents: {error}
           </div>
         ) : (
-          <IncidentTable incidents={filteredIncidents} />
+          <IncidentTable
+            incidents={filteredIncidents}
+            onOpenReport={(inc) => setReportIncident(inc)}
+          />
         )}
       </div>
+
+      {/* Bonus B-2: Executive Report Modal */}
+      {reportIncident && (
+        <ExecutiveReportModal
+          isOpen={Boolean(reportIncident)}
+          onClose={() => setReportIncident(null)}
+          incident={reportIncident}
+        />
+      )}
+
       <Footer />
     </div>
   );

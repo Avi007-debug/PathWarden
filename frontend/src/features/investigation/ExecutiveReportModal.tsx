@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { IncidentDetail, ExecutiveReportResponse } from "@/lib/api/types";
+import { IncidentDetail, Incident, ExecutiveReportResponse } from "@/lib/api/types";
 import { pathWardenApi } from "@/lib/api/client";
 import { useApp } from "@/lib/context/AppContext";
 import { Button } from "@/components/ui/Button";
@@ -23,7 +23,7 @@ import {
 interface ExecutiveReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  incident: IncidentDetail;
+  incident: IncidentDetail | Incident;
 }
 
 export function ExecutiveReportModal({
@@ -79,7 +79,7 @@ export function ExecutiveReportModal({
   if (!isOpen) return null;
 
   const rawAlerts = reportData?.raw_alerts_merged || incident.raw_alerts_merged || incident.detection_count || 14;
-  const stepsCount = incident.steps?.length || incident.steps_count || 8;
+  const stepsCount = ("steps" in incident && Array.isArray(incident.steps)) ? incident.steps.length : (incident.steps_count || 8);
   const reductionPct = reportData?.alert_compression_pct || incident.alert_compression_pct || 60;
   const engineUsed = reportData?.engine_used || "On-Device Tri-Agent Synthesis Engine";
 

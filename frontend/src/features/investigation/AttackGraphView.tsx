@@ -15,6 +15,7 @@ import {
   PanelRightOpen,
   ChevronDown,
   ChevronUp,
+  Sparkles,
 } from "lucide-react";
 import { AttackStep, AttackEdge } from "@/lib/api/types";
 import { getCytoscapeStyles, TextScale } from "@/lib/utils/cytoscape-theme";
@@ -41,6 +42,7 @@ interface AttackGraphViewProps {
   onToggleTimeline?: () => void;
   isWorkspaceEnlarged?: boolean;
   onToggleWorkspaceEnlarge?: () => void;
+  onOpenReportModal?: () => void;
 }
 
 export function AttackGraphView({
@@ -54,6 +56,7 @@ export function AttackGraphView({
   onToggleTimeline,
   isWorkspaceEnlarged,
   onToggleWorkspaceEnlarge,
+  onOpenReportModal,
 }: AttackGraphViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
@@ -404,6 +407,17 @@ export function AttackGraphView({
           {(isWorkspaceEnlarged || isFullscreen) ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           <span className="hidden sm:inline">{(isWorkspaceEnlarged || isFullscreen) ? "RESTORE" : "ENLARGE"}</span>
         </button>
+
+        {onOpenReportModal && (
+          <button
+            onClick={onOpenReportModal}
+            className="px-2 py-1 border-2 border-black bg-[#B7FF3C] text-black shadow-[2px_2px_0px_#000] hover:bg-[#a3e635] transition-all cursor-pointer flex items-center gap-1 font-mono text-[10px] font-black uppercase"
+            title="Generate Auto-Written Executive Report [Bonus B-2]"
+          >
+            <Sparkles className="w-3.5 h-3.5 fill-black/20" />
+            <span className="hidden sm:inline">REPORT [B-2]</span>
+          </button>
+        )}
         <button
           onClick={handleReset}
           className="p-1.5 text-[var(--text-muted)] hover:text-[#00C8FF] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] transition-all cursor-pointer"

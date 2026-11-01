@@ -108,11 +108,11 @@ export function InvestigationHeader({
           {onOpenReportModal && (
             <button
               onClick={onOpenReportModal}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black uppercase border-2 border-black bg-[#B7FF3C] text-black shadow-[2px_2px_0px_#000] hover:-translate-x-[1px] hover:-translate-y-[1px] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
-              title="Bonus B-2: Auto-written Plain English Incident Report via Tri-Agent Synthesis Engine"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-black uppercase border-2 border-black bg-[#B7FF3C] text-black shadow-[3px_3px_0px_#000] hover:bg-[#a3e635] hover:-translate-x-[1px] hover:-translate-y-[1px] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
+              title="Bonus B-2: Auto-written Plain English Executive Incident Report via Tri-Agent Synthesis Engine"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>[B-2] AUTO REPORT</span>
+              <Sparkles className="w-4 h-4 fill-black/20" />
+              <span>GENERATE REPORT [B-2]</span>
             </button>
           )}
 

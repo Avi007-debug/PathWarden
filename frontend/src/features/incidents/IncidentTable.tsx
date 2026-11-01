@@ -5,13 +5,14 @@ import Link from "next/link";
 import { Incident } from "@/lib/api/types";
 import { Badge } from "@/components/ui/Badge";
 import { formatTimestamp } from "@/lib/utils/formatters";
-import { ShieldAlert, Server, User, ArrowRight } from "lucide-react";
+import { ShieldAlert, Server, User, ArrowRight, Sparkles } from "lucide-react";
 
 interface IncidentTableProps {
   incidents: Incident[];
+  onOpenReport?: (incident: Incident) => void;
 }
 
-export function IncidentTable({ incidents }: IncidentTableProps) {
+export function IncidentTable({ incidents, onOpenReport }: IncidentTableProps) {
   if (incidents.length === 0) {
     return (
       <div className="p-12 border-2 border-[var(--border-color)] bg-[var(--bg-surface)] text-center font-mono shadow-[4px_4px_0px_var(--border-color)] select-none">
@@ -180,13 +181,25 @@ export function IncidentTable({ incidents }: IncidentTableProps) {
 
                   {/* Action Link */}
                   <td className="py-3.5 px-4 text-right align-top">
-                    <Link
-                      href={`/incidents/${incident.incident_id}`}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold border-2 border-[var(--border-color)] text-[var(--text-primary)] bg-[var(--bg-surface)] shadow-[2px_2px_0px_var(--border-color)] hover:shadow-[3px_3px_0px_#00C8FF] hover:border-[#00C8FF] hover:text-[#00C8FF] hover:-translate-x-[1px] hover:-translate-y-[1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all uppercase"
-                    >
-                      <span>Investigate</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
+                    <div className="flex items-center justify-end gap-1.5">
+                      {onOpenReport && (
+                        <button
+                          onClick={() => onOpenReport(incident)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-black border-2 border-black bg-[#B7FF3C] text-black shadow-[2px_2px_0px_#000] hover:bg-[#a3e635] hover:-translate-x-[1px] hover:-translate-y-[1px] transition-all uppercase cursor-pointer"
+                          title="View Auto-Written Executive Report [Bonus B-2]"
+                        >
+                          <Sparkles className="w-3 h-3 fill-black/20" />
+                          <span>Report</span>
+                        </button>
+                      )}
+                      <Link
+                        href={`/incidents/${incident.incident_id}`}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold border-2 border-[var(--border-color)] text-[var(--text-primary)] bg-[var(--bg-surface)] shadow-[2px_2px_0px_var(--border-color)] hover:shadow-[3px_3px_0px_#00C8FF] hover:border-[#00C8FF] hover:text-[#00C8FF] hover:-translate-x-[1px] hover:-translate-y-[1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all uppercase"
+                      >
+                        <span>Investigate</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               );

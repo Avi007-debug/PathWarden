@@ -198,6 +198,7 @@ function IncidentInvestigationContent() {
                 isTimelineOpen={true}
                 isWorkspaceEnlarged={true}
                 onToggleWorkspaceEnlarge={() => setIsWorkspaceEnlarged(false)}
+                onOpenReportModal={() => setReportModalOpen(true)}
               />
             </div>
 
@@ -272,6 +273,7 @@ function IncidentInvestigationContent() {
             onToggleTimeline={handleToggleTimeline}
             isWorkspaceEnlarged={isWorkspaceEnlarged}
             onToggleWorkspaceEnlarge={() => setIsWorkspaceEnlarged(!isWorkspaceEnlarged)}
+            onOpenReportModal={() => setReportModalOpen(true)}
           />
 
           {/* Mobile Step Selection Drawer / Pill */}
