@@ -288,10 +288,12 @@ def trigger_run(req: RunRequest):
         from worker.pipeline_coordinator import run_pipeline
 
         logger.info("Triggering live log file ingestion & analysis on: %s", input_path)
+        workers_count = min(4, max(1, os.cpu_count() or 4))
         total_events, total_detections = ingest_and_extract_detections(
             input_file=input_path,
             data_dir=target_data_dir,
             batch_size=10000,
+            max_workers=workers_count,
         )
         run_id = f"RUN-{uuid.uuid4().hex[:8].upper()}"
         res = run_pipeline(
@@ -358,6 +360,7 @@ async def upload_and_run(
         input_file=target_path,
         data_dir=settings.data_dir,
         batch_size=10000,
+        max_workers=min(4, max(1, os.cpu_count() or 4)),
         clean=True,
     )
     t_ingest = max(0.1, time.time() - t_start)

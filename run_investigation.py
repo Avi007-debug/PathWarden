@@ -253,7 +253,7 @@ def ingest_and_extract_detections(
     input_file: str,
     data_dir: str,
     batch_size: int = 25000,
-    max_workers: int = 1,
+    max_workers: int = 4,
     clean: bool = False,
 ) -> tuple[int, int]:
     """Ingest raw log file into events/*.parquet and extract detections/*.parquet with zero-pipe multi-core workers."""
@@ -780,7 +780,7 @@ def main():
     parser.add_argument("--data-dir", default="./data", help="Output data directory for Parquet storage")
     parser.add_argument("--max-memory-gb", type=float, default=8.0, help="Max container memory budget")
     parser.add_argument("--batch-size", type=int, default=25000, help="Chunk batch size for stream reader")
-    parser.add_argument("--workers", type=int, default=1, help="Number of parallel worker processes (1 for zero-pipe streaming, or 2-3 for multi-core)")
+    parser.add_argument("--workers", type=int, default=4, help="Number of parallel worker processes (default 4 cores, or specify custom)")
     parser.add_argument("--clean", action="store_true", help="Clean old Parquet partitions in data/events before ingesting")
     parser.add_argument("--skip-ingestion", action="store_true", help="Skip Phase 1 ingestion and reuse existing Parquet files in data/events")
     args = parser.parse_args()
