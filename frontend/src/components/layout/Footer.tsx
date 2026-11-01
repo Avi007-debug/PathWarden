@@ -35,7 +35,7 @@ export function Footer() {
         {/* Col 1: System Brand & Enclave Status */}
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 border border-[var(--border-color)] bg-[#050B14] flex items-center justify-center shadow-[1px_1px_0px_var(--border-color)] p-0.5">
+            <div className="w-6 h-6 border border-[var(--border-color)] bg-transparent flex items-center justify-center shadow-[1px_1px_0px_var(--border-color)] p-0.5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo.png" alt="PathWarden" className="w-full h-full object-contain filter drop-shadow-[0_0_2px_#00C8FF]" />
             </div>

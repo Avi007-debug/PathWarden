@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { pathWardenApi } from "../api/client";
+import { ProcessingStatusResponse } from "../api/types";
 
 interface AppContextValue {
   theme: "dark" | "light";
@@ -13,6 +14,8 @@ interface AppContextValue {
   selectedIncidentId: string;
   setSelectedIncidentId: (id: string) => void;
   incidentCount: number;
+  systemStatus: ProcessingStatusResponse | null;
+  refreshStatus: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
@@ -23,6 +26,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string>("INC-001");
   const [incidentCount, setIncidentCount] = useState<number>(2);
+  const [systemStatus, setSystemStatus] = useState<ProcessingStatusResponse | null>(null);
 
   const applyTheme = useCallback((t: "dark" | "light") => {
     if (t === "dark") {
@@ -41,7 +45,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     try {
-      await pathWardenApi.getStatus(false);
+      const status = await pathWardenApi.getStatus(false);
+      setSystemStatus(status);
       setBackendOnline(true);
       setIsDemoMode(false);
       try {
@@ -61,6 +66,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, []);
+
+  const refreshStatus = useCallback(async () => {
+    try {
+      const st = await pathWardenApi.getStatus(isDemoMode);
+      setSystemStatus(st);
+    } catch {
+      // Ignored
+    }
+  }, [isDemoMode]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      refreshStatus();
+    }, 12000);
+    return () => clearInterval(timer);
+  }, [refreshStatus]);
 
   // Load saved theme or system preference
   useEffect(() => {
@@ -155,6 +176,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         selectedIncidentId,
         setSelectedIncidentId,
         incidentCount,
+        systemStatus,
+        refreshStatus,
       }}
     >
       {children}

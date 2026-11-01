@@ -23,10 +23,10 @@ export function TopBar() {
         {/* Left: Branding & Context */}
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2.5 group">
-            {/* Neo-Brutalist Frame with Neon Shield Logo */}
+            {/* Neo-Brutalist Frame with Neon Shield Logo (Transparent in light & dark theme) */}
             <div
               style={{ width: "36px", height: "36px", minWidth: "36px", minHeight: "36px" }}
-              className="w-9 h-9 relative border-2 border-[var(--border-color)] bg-[#050B14] flex items-center justify-center overflow-hidden shadow-[2px_2px_0px_var(--border-color)] group-hover:shadow-[3px_3px_0px_#00C8FF] group-hover:border-[#00C8FF] group-hover:-translate-x-[1px] group-hover:-translate-y-[1px] transition-all shrink-0 p-1"
+              className="w-9 h-9 relative border-2 border-[var(--border-color)] bg-transparent flex items-center justify-center overflow-hidden shadow-[2px_2px_0px_var(--border-color)] group-hover:shadow-[3px_3px_0px_#00C8FF] group-hover:border-[#00C8FF] group-hover:-translate-x-[1px] group-hover:-translate-y-[1px] transition-all shrink-0 p-1"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

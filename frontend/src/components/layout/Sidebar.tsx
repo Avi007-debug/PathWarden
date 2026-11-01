@@ -28,7 +28,14 @@ interface NavItem {
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const { selectedIncidentId, incidentCount } = useApp();
+  const { selectedIncidentId, incidentCount, systemStatus, isDemoMode } = useApp();
+
+  const usedRamGb = systemStatus?.memory_used_gb ?? (isDemoMode ? 6.4 : 1.2);
+  const budgetCapGb = systemStatus?.memory_budget_gb ?? (systemStatus?.machine_specifications?.budget_limit_gb ?? 8.0);
+  const ramUsagePct = systemStatus?.memory_usage_pct ?? Math.min(100, Math.round((usedRamGb / budgetCapGb) * 100));
+  const totalHostRamGb = systemStatus?.machine_specifications?.total_ram_gb;
+  const processRssMb = systemStatus?.machine_specifications?.process_memory_mb;
+  const cpuPct = systemStatus?.cpu_usage_pct;
 
   const navItems: NavItem[] = [
     {
@@ -154,7 +161,14 @@ export function Sidebar() {
       </div>
 
       {/* Bottom Telemetry & Resource Budget Footprint */}
-      <div className="p-3 border-t-2 border-[var(--border-color)] bg-[var(--bg-surface-elevated)]">
+      <div
+        className="p-3 border-t-2 border-[var(--border-color)] bg-[var(--bg-surface-elevated)]"
+        title={
+          totalHostRamGb
+            ? `Host Physical RAM: ${usedRamGb.toFixed(1)} / ${totalHostRamGb.toFixed(1)} GB | Process Peak: ${processRssMb ? processRssMb.toFixed(0) : 175} MB | Enclave Budget Cap: ${budgetCapGb.toFixed(1)} GB${cpuPct !== undefined ? ` | CPU: ${cpuPct}%` : ""}`
+            : `RAM Budget: ${usedRamGb.toFixed(1)} / ${budgetCapGb.toFixed(1)} GB`
+        }
+      >
         {!collapsed ? (
           <div className="flex flex-col gap-2 font-mono text-[11px]">
             <div className="flex items-center justify-between text-[var(--text-muted)]">
@@ -162,22 +176,24 @@ export function Sidebar() {
                 <Cpu className="w-3.5 h-3.5 text-[#B7FF3C]" />
                 RAM Budget
               </span>
-              <span className="text-[var(--text-primary)] font-bold">6.4 / 8.0 GB</span>
+              <span className="text-[var(--text-primary)] font-bold">
+                {usedRamGb.toFixed(1)} / {budgetCapGb.toFixed(1)} GB
+              </span>
             </div>
             {/* Neo-brutalist memory progress meter */}
             <div className="w-full h-2.5 bg-[#050B14] border-2 border-[var(--border-color)] p-0.5">
               <div
-                className="h-full bg-gradient-to-r from-[#00C8FF] to-[#B7FF3C]"
-                style={{ width: "80.2%" }}
+                className="h-full bg-gradient-to-r from-[#00C8FF] to-[#B7FF3C] transition-all duration-500"
+                style={{ width: `${Math.max(4, Math.min(100, ramUsagePct))}%` }}
               />
             </div>
             <div className="flex items-center justify-between text-[10px] text-[var(--text-dim)] font-bold">
               <span>ENCLAVE LOCK</span>
-              <span>8.0 GB MAX</span>
+              <span>{budgetCapGb.toFixed(1)} GB MAX</span>
             </div>
           </div>
         ) : (
-          <div className="flex justify-center" title="RAM Budget: 6.4 / 8.0 GB">
+          <div className="flex justify-center" title={`RAM Budget: ${usedRamGb.toFixed(1)} / ${budgetCapGb.toFixed(1)} GB`}>
             <Cpu className="w-4 h-4 text-[#B7FF3C]" />
           </div>
         )}
