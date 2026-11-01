@@ -28,7 +28,7 @@ export function BenchmarkSummaryCards({ benchmark }: BenchmarkSummaryCardsProps)
           </div>
         </div>
         <div className="text-[10px] text-[var(--text-muted)] border-t border-[var(--border-subtle)] pt-1.5 font-semibold">
-          Tier: 30 GB Advanced (1.3× Multiplier)
+          Tier: {benchmark.tier_name || `${Math.round(benchmark.dataset_size_gb || 30)} GB Tier (${benchmark.multiplier || '1.3×'})`}
         </div>
       </div>
 

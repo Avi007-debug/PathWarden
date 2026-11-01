@@ -52,7 +52,7 @@ export default function BenchmarksPage() {
               </h1>
             </div>
             <p className="text-xs text-[var(--text-muted)] font-medium">
-              30 GB Advanced Tier (1.3× Multiplier) measured against planted attacks • Evaluated on host specifications
+              {report?.tier_name || `${Math.round(report?.dataset_size_gb || 30)} GB Tier (${report?.multiplier || '1.3×'})`} measured against planted attacks • Evaluated on host specifications
             </p>
           </div>
 
@@ -92,7 +92,7 @@ export default function BenchmarksPage() {
                 <span className="text-[var(--text-dim)] hidden sm:inline">|</span>
                 <div className="flex items-center gap-1.5 text-[var(--text-muted)] font-semibold">
                   <HardDrive className="w-4 h-4 text-[#00C8FF]" />
-                  <span>Dataset: 30 GB Advanced Tier (1.3× Multiplier)</span>
+                  <span>Dataset: {report.tier_name || `${Math.round(report.dataset_size_gb || 30)} GB Tier (${report.multiplier || '1.3×'})`}</span>
                 </div>
               </div>
               <span className="text-[10px] px-2.5 py-1 bg-[#B7FF3C] text-black font-extrabold border border-black shadow-[2px_2px_0px_#000] uppercase tracking-wider">

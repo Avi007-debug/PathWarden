@@ -460,6 +460,8 @@ export interface ProcessingStatusResponse {
   cpu_usage_pct?: number;
   storage_engine?: string;
   engine_mode?: string;
+  tier_name?: string;
+  dataset_size_gb?: number;
   machine_specifications?: MachineSpecifications;
   target_matrix?: CompetitionTargetItem[];
 }

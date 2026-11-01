@@ -27,6 +27,20 @@ import {
 } from "../demo/syntheticData";
 
 export const getApiBaseUrl = (): string => {
+  if (typeof window !== "undefined") {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlParam = params.get("api") || params.get("backend");
+      if (urlParam) {
+        localStorage.setItem("pathwarden_custom_api_url", urlParam);
+        return urlParam.replace(/\/$/, "");
+      }
+    } catch {
+      // Ignored
+    }
+    const customUrl = localStorage.getItem("pathwarden_custom_api_url");
+    if (customUrl) return customUrl.replace(/\/$/, "");
+  }
   if (process.env.NEXT_PUBLIC_API_BASE_URL) return process.env.NEXT_PUBLIC_API_BASE_URL;
   if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
   // Default to local backend on port 8000 so deployed frontend connects to local backend

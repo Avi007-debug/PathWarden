@@ -69,7 +69,7 @@ export function Sidebar() {
       label: "Benchmarks",
       href: "/benchmarks",
       icon: Gauge,
-      badge: "30GB",
+      badge: systemStatus?.tier_name || (systemStatus?.dataset_size_gb ? `${Math.round(systemStatus.dataset_size_gb)}GB` : "30GB"),
     },
   ];
 

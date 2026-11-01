@@ -728,6 +728,7 @@ def compute_dynamic_benchmarks(
         "run_id": run_id,
         "dataset_file": os.path.basename(input_file),
         "file_size_gb": round(file_size_gb, 3),
+        "dataset_size_gb": round(file_size_gb, 3),
         "total_duration_seconds": round(t_total, 2),
         "duration_sec": round(t_total, 2),
         "events_processed": total_events,

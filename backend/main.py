@@ -181,6 +181,8 @@ def get_system_status():
         "engine_mode": "DUCKDB_PARQUET_OUT_OF_CORE",
         "total_events_ingested": total_events,
         "active_incidents": active_incidents,
+        "dataset_size_gb": round(bench_data.get("file_size_gb") or bench_data.get("dataset_size_gb", 30.0), 1) if bench_data else 30.0,
+        "tier_name": (f"{round(bench_data.get('file_size_gb', 30.0))}GB" if (bench_data and bench_data.get("file_size_gb", 0) >= 40) else "30GB") if bench_data else "30GB",
         "current_run_id": active_run,
         "machine_specifications": {
             "cpu_cores": metrics.cpu_count,

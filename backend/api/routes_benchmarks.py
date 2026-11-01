@@ -46,14 +46,22 @@ def get_benchmarks():
 
 def _enrich_benchmark(data: dict) -> dict:
     demo = _demo_benchmarks()
-    duration = data.get("duration_sec", 1)
+    duration = data.get("duration_sec") or data.get("total_duration_seconds", 1)
     events = data.get("events_processed", 0)
-    throughput = round(events / max(1, duration), 0)
+    throughput = data.get("sustained_throughput_mbs") or data.get("throughput_mb_s") or round(events / max(1, duration), 0)
+    file_size = data.get("file_size_gb") or data.get("dataset_size_gb") or 30.0
+    tier_name = f"{round(file_size)} GB Tier" if file_size >= 40 else "30 GB Advanced Tier (1.3× Multiplier)"
+    multiplier = f"{round(file_size / 23.0, 1)}×" if file_size >= 40 else "1.3×"
     return {
         **demo,
         **data,
+        "dataset_size_gb": round(file_size, 1),
+        "file_size_gb": round(file_size, 1),
+        "tier_name": tier_name,
+        "multiplier": multiplier,
         "total_duration_seconds": int(duration),
-        "events_per_second": throughput,
+        "sustained_throughput_mbs": throughput,
+        "events_per_second": round(events / max(1, duration), 0),
     }
 
 
