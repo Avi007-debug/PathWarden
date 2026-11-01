@@ -129,6 +129,21 @@ def test_bonus_b1_risk_score_sorting():
     for inc in incidents:
         assert "plain_english_report" in inc
         assert len(inc["plain_english_report"]) > 20
+        # Bonus B-3 Raw Alerts Merged
+        assert "raw_alerts_merged" in inc
+        assert inc["raw_alerts_merged"] >= inc.get("steps_count", 0)
+
+
+def test_bonus_b2_b3_agentic_report():
+    from api.routes_incidents import get_incident_report
+    report = get_incident_report("INC-2026-0841", force_engine="deterministic")
+    assert report["incident_id"] == "INC-2026-0841"
+    assert "report_markdown" in report
+    assert "Executive Summary" in report["report_markdown"]
+    assert "Bonus B-3" in report["report_markdown"]
+    assert report["raw_alerts_merged"] >= 8
+    assert report["alert_compression_pct"] > 0
+    assert "engine_used" in report
 
 
 def test_bonus_b4_rules_api():
