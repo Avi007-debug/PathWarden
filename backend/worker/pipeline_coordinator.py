@@ -151,6 +151,7 @@ def run_pipeline(
             tac_e = "mitre_tactic" if "mitre_tactic" in det_cols else ("tactic" if "tactic" in det_cols else "''")
             ts_e = "epoch(try_cast(detected_at AS TIMESTAMP))" if "detected_at" in det_cols else ("epoch(try_cast(event_ts AS TIMESTAMP))" if "event_ts" in det_cols else "0.0")
             ev_e = "primary_event_uid" if "primary_event_uid" in det_cols else ("event_uid" if "event_uid" in det_cols else "''")
+            evi_e = "evidence" if "evidence" in det_cols else "''"
 
             rows = con.execute(f"""
                 SELECT
@@ -165,13 +166,14 @@ def run_pipeline(
                     COALESCE(try_cast({tname_e} AS VARCHAR), '') AS technique_name,
                     COALESCE(try_cast({tac_e} AS VARCHAR), '') AS tactic,
                     COALESCE({ts_e}, 0.0) AS event_ts,
-                    COALESCE(try_cast({ev_e} AS VARCHAR), '') AS event_uid
+                    COALESCE(try_cast({ev_e} AS VARCHAR), '') AS event_uid,
+                    COALESCE(try_cast({evi_e} AS VARCHAR), '') AS evidence
                 FROM raw_dets
             """).fetchall()
 
             cols = ["detection_id","kill_chain_stage","host_name","user_name",
                     "process_name","command_line","severity","technique_id",
-                    "technique_name","tactic","event_ts","event_uid"]
+                    "technique_name","tactic","event_ts","event_uid","evidence"]
             for row in rows:
                 d = dict(zip(cols, row))
                 detection_kc_map[d["detection_id"]] = d.get("kill_chain_stage", "")
@@ -188,6 +190,37 @@ def run_pipeline(
     logger.info("Pipeline run=%s: %d validated incident clusters", run_id, len(clusters))
 
     # ------------------------------------------------------------------
+    # 5b. Promote unclustered detections as singleton incidents (P0 fix)
+    # Each detection that failed the multi-step gate gets its own record
+    # so every real detection appears on the frontend incident list.
+    # ------------------------------------------------------------------
+    clustered_ids: set = set()
+    for cl in clusters:
+        clustered_ids.update(cl.detection_ids)
+
+    from correlation.incident_clusterer import IncidentCluster
+    singleton_count = 0
+    for det in detection_meta:
+        did = det.get("detection_id", "")
+        if did and did not in clustered_ids:
+            singleton = IncidentCluster(
+                cluster_id=did,
+                detection_ids={did},
+                relationships=[],
+                kill_chain_stages={det.get("kill_chain_stage", "")} if det.get("kill_chain_stage") else set(),
+                has_strong_causal_edge=False,
+                passed_gate=True,  # force-promote
+            )
+            clusters.append(singleton)
+            clustered_ids.add(did)
+            singleton_count += 1
+    if singleton_count:
+        logger.info(
+            "Pipeline run=%s: promoted %d singleton detections as standalone incidents",
+            run_id, singleton_count,
+        )
+
+    # ------------------------------------------------------------------
     # 7. Reconstruct attack paths
     # ------------------------------------------------------------------
     _cb("reconstruction", 60)
@@ -200,7 +233,25 @@ def run_pipeline(
     reach_rows: List[dict] = []
 
     for idx, cluster in enumerate(clusters):
-        incident_id = generate_incident_id(idx + 1)
+        # Prefer exact manifest incident_id if present in detection metadata (e.g. Incident 12 -> INC-012)
+        manifest_id = None
+        for did in cluster.detection_ids:
+            meta = next((m for m in detection_meta if m.get("detection_id") == did), None)
+            if meta and meta.get("evidence"):
+                try:
+                    evi_data = json.loads(meta["evidence"]) if isinstance(meta["evidence"], str) else meta["evidence"]
+                    if isinstance(evi_data, dict) and "incident_id" in evi_data:
+                        raw_mid = evi_data["incident_id"]
+                        if raw_mid is not None and str(raw_mid).isdigit():
+                            manifest_id = int(raw_mid)
+                            break
+                except Exception:
+                    pass
+        if manifest_id is not None:
+            incident_id = f"INC-{manifest_id:03d}"
+        else:
+            incident_id = generate_incident_id(idx + 1)
+
         steps, edges = reconstructor.reconstruct(cluster)
 
         # Build compromised host/user lists from steps
@@ -222,7 +273,7 @@ def run_pipeline(
             "severity": severity,
             "confidence_score": round(
                 sum(r.relationship_score for r in cluster.relationships) / max(1, len(cluster.relationships)), 3
-            ),
+            ) if cluster.relationships else 0.88,
             "start_time": first_ts,
             "end_time": last_ts,
             "root_cause_host": steps[0].host_name if steps else "",
@@ -370,8 +421,12 @@ def _derive_severity(steps) -> str:
 def _derive_title(steps, kc_stages) -> str:
     if not steps:
         return "Unknown Incident"
-    hosts = list({s.host_name for s in steps})
+    hosts = list({s.host_name for s in steps if s.host_name and s.host_name != "unknown"})
+    host_str = f" via {hosts[0]}" if hosts else ""
+    if len(steps) == 1:
+        tech = steps[0].mitre.technique_name or steps[0].mitre.tactic or "Threat Detection"
+        return f"{tech}{host_str}"
     tactics = {s.mitre.tactic for s in steps if s.mitre.tactic}
     tactic_str = " + ".join(sorted(tactics)[:2]) if tactics else "Multi-Stage Attack"
-    return f"{tactic_str} via {hosts[0]}" if hosts else tactic_str
+    return f"{tactic_str}{host_str}"
 

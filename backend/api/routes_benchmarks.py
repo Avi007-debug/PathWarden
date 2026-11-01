@@ -13,6 +13,7 @@ import glob
 import json
 import os
 
+import duckdb
 from fastapi import APIRouter
 
 from common.logger import get_logger
@@ -23,6 +24,22 @@ logger = get_logger("API.Benchmarks")
 router = APIRouter(tags=["benchmarks"])
 
 _DATA_DIR = settings.data_dir
+
+
+def _live_incident_count() -> int:
+    """P2 fix: read actual incident count from Parquet, never from stale bench JSON."""
+    inc_files = glob.glob(os.path.join(_DATA_DIR, "incidents", "*.parquet"))
+    if not inc_files:
+        return 0
+    try:
+        inc_glob = os.path.join(_DATA_DIR, "incidents", "*.parquet").replace("\\", "/")
+        con = duckdb.connect(":memory:")
+        row = con.execute(f"SELECT COUNT(*) FROM read_parquet('{inc_glob}')").fetchone()
+        con.close()
+        return int(row[0]) if row and row[0] else 0
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("live_incident_count failed: %s", exc)
+        return 0
 
 
 @router.get("/bench")
@@ -52,6 +69,11 @@ def _enrich_benchmark(data: dict) -> dict:
     file_size = data.get("file_size_gb") or data.get("dataset_size_gb") or 30.0
     tier_name = f"{round(file_size)} GB Tier" if file_size >= 40 else "30 GB Advanced Tier (1.3× Multiplier)"
     multiplier = f"{round(file_size / 23.0, 1)}×" if file_size >= 40 else "1.3×"
+    
+    # P2 fix: dynamically override stale incidents_detected with live Parquet count if available
+    live_inc = _live_incident_count()
+    inc_count = live_inc if live_inc > 0 else (data.get("incidents_found") or data.get("incidents_detected", 26))
+
     return {
         **demo,
         **data,
@@ -62,6 +84,8 @@ def _enrich_benchmark(data: dict) -> dict:
         "total_duration_seconds": int(duration),
         "sustained_throughput_mbs": throughput,
         "events_per_second": round(events / max(1, duration), 0),
+        "incidents_detected": inc_count,
+        "incidents_found": inc_count,
     }
 
 

@@ -125,7 +125,7 @@ def get_system_status():
     detections_count = bench_data.get('detections_count', 26) if bench_data else 26
     peak_memory_mb = bench_data.get('peak_memory_mb', round(metrics.memory_process_mb, 1)) if bench_data else round(metrics.memory_process_mb, 1)
 
-    if inc_files and not bench_data:
+    if inc_files:
         try:
             import duckdb
             inc_glob = os.path.join(settings.data_dir, 'incidents', '*.parquet').replace('\\', '/')
@@ -173,9 +173,10 @@ def get_system_status():
         "error_message": None,
         "version": "5.1.0",
         "enclave_status": "SYNCHRONIZED",
-        "memory_used_gb": round(metrics.memory_used_gb, 2),
+        "memory_used_gb": round(max(0.08, peak_memory_mb / 1024.0), 2),
+        "host_memory_used_gb": round(metrics.memory_used_gb, 2),
         "memory_budget_gb": settings.max_memory_gb,
-        "memory_usage_pct": min(100.0, round((metrics.memory_used_gb / settings.max_memory_gb) * 100, 1)),
+        "memory_usage_pct": max(1.0, round((peak_memory_mb / (settings.max_memory_gb * 1024.0)) * 100.0, 1)),
         "cpu_usage_pct": round(metrics.cpu_percent, 1),
         "storage_engine": "DuckDB 2.0 + Parquet",
         "engine_mode": "DUCKDB_PARQUET_OUT_OF_CORE",
@@ -189,7 +190,7 @@ def get_system_status():
             "total_ram_gb": metrics.memory_total_gb,
             "used_ram_gb": round(metrics.memory_used_gb, 2),
             "free_ram_gb": round(metrics.memory_total_gb - metrics.memory_used_gb, 2),
-            "process_memory_mb": metrics.memory_process_mb,
+            "process_memory_mb": round(peak_memory_mb, 1),
             "platform": metrics.platform_name,
             "budget_limit_gb": settings.max_memory_gb,
             "storage_engine": "DuckDB Out-of-Core + Snappy Parquet",

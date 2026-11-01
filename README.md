@@ -186,3 +186,20 @@ PathWarden exposes the following RESTful endpoints:
 - `GET /rules`: Active detection rules loaded from configuration YAML **[Bonus B-4]**.
 - `GET /bench`: Target Matrix competition benchmarks and query latency metrics.
 - `GET /evidence?event_uid=...&ctx=5`: Inspectable source records for any graph node or edge.
+
+---
+
+## 7. Security Measures
+
+PathWarden follows a security-first approach to protect its application, APIs, data, and log-processing pipeline.
+- **Authentication & Authorization**: JWT-based authentication, role-based access control (RBAC), and MFA for administrative accounts.
+- **API Security**: Rate limiting, strict input validation, secure CORS configuration, and protection against unauthorized data access.
+- **Secure File Ingestion**: File type and size validation, safe file handling, and isolated log processing.
+- **Data Protection**: HTTPS/TLS, encrypted sensitive data, secure password hashing, and environment-based secrets management.
+- **Attack Prevention**: Protection against SQL injection, XSS, CSRF, SSRF, and path traversal vulnerabilities.
+- **Audit Logging**: Track login attempts, file uploads, investigation activities, and administrative actions.
+- **Self-Security Monitoring**: Monitor application logs to detect suspicious login attempts, unusual API activity, and potential privilege escalation.
+
+### Security Testing Tools
+OWASP ZAP, Bandit, Semgrep, and pip-audit for identifying application vulnerabilities and dependency risks.
+
