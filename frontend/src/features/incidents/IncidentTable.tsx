@@ -34,7 +34,7 @@ export function IncidentTable({ incidents }: IncidentTableProps) {
               <th className="py-3 px-4 text-center">Risk (B-1)</th>
               <th className="py-3 px-4">Attack Summary & Narrative (B-2)</th>
               <th className="py-3 px-4">Hosts & Entities</th>
-              <th className="py-3 px-4 text-center">Steps</th>
+              <th className="py-3 px-4 text-center">Steps / Merged (B-3)</th>
               <th className="py-3 px-4 text-center">Confidence</th>
               <th className="py-3 px-4">Time Window</th>
               <th className="py-3 px-4 text-right">Action</th>
@@ -114,7 +114,7 @@ export function IncidentTable({ incidents }: IncidentTableProps) {
                       </p>
                       {incident.plain_english_report && (
                         <div className="p-1.5 bg-[var(--bg-surface-elevated)] border border-[var(--border-color)] text-[10px] text-[var(--text-dim)] italic line-clamp-2">
-                          <span className="font-bold not-italic text-[#00C8FF]">Auto Report: </span>
+                          <span className="font-bold not-italic text-[#00C8FF]">[B-2 Auto Report]: </span>
                           {incident.plain_english_report}
                         </div>
                       )}
@@ -154,9 +154,17 @@ export function IncidentTable({ incidents }: IncidentTableProps) {
                     </div>
                   </td>
 
-                  {/* Steps */}
-                  <td className="py-3.5 px-4 text-center align-top font-black text-sm text-[#00C8FF]">
-                    {incident.steps_count}
+                  {/* Steps & Merged Alerts (Bonus B-3) */}
+                  <td className="py-3.5 px-4 text-center align-top">
+                    <span className="font-black text-sm text-[#00C8FF] block">
+                      {incident.steps_count}
+                    </span>
+                    <span
+                      className="inline-block mt-1 text-[9px] px-1.5 py-0.5 bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/40 font-bold uppercase whitespace-nowrap"
+                      title={`Bonus B-3: ${incident.raw_alerts_merged || incident.detection_count || 14} raw alerts merged into ${incident.steps_count} steps`}
+                    >
+                      {incident.raw_alerts_merged || incident.detection_count || 14} ALERTS
+                    </span>
                   </td>
 
                   {/* Confidence */}

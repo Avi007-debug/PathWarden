@@ -228,6 +228,8 @@ export interface Incident {
   last_seen: string;
   hosts_involved: string[];
   users_involved: string[];
+  root_cause_host?: string;
+  root_cause_user?: string;
   steps_count: number;
   detection_count: number;
   tactics: string[];
@@ -235,9 +237,30 @@ export interface Incident {
   dq_caveats: IncidentDataQualityCaveat[];
   summary: string;
   plain_english_report?: string; // Bonus B-2: Executive plain English narrative
+  executive_report_markdown?: string; // Bonus B-2: Full multi-agent markdown report
+  report_engine_used?: string; // Bonus B-2: On-Device LLM or Agentic Engine
+  raw_alerts_merged?: number; // Bonus B-3: Raw alerts/detections merged into this incident
+  alert_compression_pct?: number; // Bonus B-3: Noise reduction percentage
   planted_attack_id?: string;
   is_planted_match?: boolean;
   fp_verification?: FPVerification | null;
+}
+
+export interface ExecutiveReportResponse {
+  incident_id: string;
+  severity: string;
+  risk_score: number;
+  plain_english_report: string;
+  report_markdown: string;
+  raw_alerts_merged: number;
+  alert_compression_pct: number;
+  engine_used: string;
+  generated_at: string;
+  agent_workflow: {
+    analyst_agent: string;
+    forensics_agent: string;
+    executive_reporter_agent: string;
+  };
 }
 
 export interface IncidentDetail extends Incident {

@@ -13,6 +13,7 @@ import {
   RunAnalysisResponse,
   DetectionRule,
   RulesResponse,
+  ExecutiveReportResponse,
 } from "./types";
 import {
   DEMO_INCIDENTS,
@@ -102,6 +103,29 @@ function getSyntheticResponse<T>(endpoint: string): T {
   }
   if (endpoint === "/incidents") {
     return DEMO_INCIDENTS as unknown as T;
+  }
+  if (endpoint.startsWith("/incidents/") && endpoint.includes("/report")) {
+    const id = endpoint.split("/")[2] || "INC-2026-0841";
+    const found = DEMO_INCIDENTS.find((i) => i.incident_id === id);
+    const rawAlerts = found?.raw_alerts_merged || found?.detection_count || 18;
+    const stepsCnt = found?.steps_count || 8;
+    const redPct = Math.round((1 - stepsCnt / rawAlerts) * 100);
+    return {
+      incident_id: id,
+      severity: found?.severity || "CRITICAL",
+      risk_score: found?.risk_score || 98,
+      plain_english_report: found?.plain_english_report || `Incident ${id} has been classified with a prioritized Risk Score of 98/100 (CRITICAL Severity).`,
+      report_markdown: `# INCIDENT INVESTIGATION REPORT: ${id}\n\n> **Severity**: ${found?.severity || "CRITICAL"} | **Risk Score**: ${found?.risk_score || 98}/100 | **Status**: ACTIVE_INVESTIGATION\n\n### 1. Executive Summary (Plain English Briefing)\n${found?.plain_english_report || `Adversarial activity was observed across multiple endpoints.`}\n\n### 2. Alert Correlation & Merging Accounting [Bonus B-3]\n- **Raw Alerts Merged**: **${rawAlerts} raw alerts** consolidated into **${stepsCnt} attack steps**.\n- **Alert Fatigue Reduction**: **${redPct}% noise reduction**.\n\n### 3. Chronological Attack Path Narrative\nTraversed multi-stage progression through kill-chain stages.\n\n### 4. Prioritized Action Plan\n- [ ] Isolate compromised endpoints\n- [ ] Revoke user credentials\n- [ ] Rotate sensitive tokens\n\n### 5. Tri-Agent Autonomous Pipeline Provenance\n- **Agent 1 (Detection Analyst)**: Analyzed ${rawAlerts} raw telemetry alerts.\n- **Agent 2 (Forensics Investigator)**: Mapped affected hosts and confirmed root-cause.\n- **Agent 3 (Executive Reporter)**: Synthesized report structure via On-Device Tri-Agent Synthesis Engine.\n`,
+      raw_alerts_merged: rawAlerts,
+      alert_compression_pct: redPct,
+      engine_used: "On-Device Tri-Agent Synthesis Engine",
+      generated_at: new Date().toISOString(),
+      agent_workflow: {
+        analyst_agent: `Triaged ${rawAlerts} alerts with ${redPct}% noise reduction.`,
+        forensics_agent: `Mapped ${found?.hosts_involved?.length || 3} hosts.`,
+        executive_reporter_agent: "Completed plain English synthesis.",
+      },
+    } as unknown as T;
   }
   if (endpoint.startsWith("/incidents/") && endpoint.endsWith("/path")) {
     const id = endpoint.split("/")[2];
@@ -238,6 +262,12 @@ export const pathWardenApi = {
   getIncident: (id: string, isDemo = false) => request<IncidentDetail>(`/incidents/${id}`, undefined, isDemo),
   getIncidentPath: (id: string, isDemo = false) =>
     request<{ steps: IncidentDetail["steps"]; edges: IncidentDetail["edges"] }>(`/incidents/${id}/path`, undefined, isDemo),
+  getIncidentReport: (id: string, forceEngine?: string, isDemo = false) =>
+    request<ExecutiveReportResponse>(
+      `/incidents/${id}/report${forceEngine ? `?force_engine=${forceEngine}` : ""}`,
+      undefined,
+      isDemo
+    ),
   getReachability: (incidentId?: string, isDemo = false) =>
     request<ReachabilityItem[]>(
       incidentId ? `/incidents/${incidentId}/reach` : "/incidents/INC-001/reach",
