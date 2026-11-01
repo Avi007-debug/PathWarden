@@ -108,28 +108,28 @@ def get_system_status():
     active_run = _registry.get_active_run() if _registry else None
 
     import glob, json
-    bench_files = glob.glob(os.path.join(settings.data_dir, "benchmarks", "*_bench.json"))
+    bench_files = glob.glob(os.path.join(settings.data_dir, 'benchmarks', '*_bench.json'))
     bench_data = None
     if bench_files:
         bench_files.sort(key=os.path.getmtime, reverse=True)
         try:
-            with open(bench_files[0], "r", encoding="utf-8") as bf:
+            with open(bench_files[0], 'r', encoding='utf-8') as bf:
                 bench_data = json.load(bf)
         except Exception:
             pass
 
     # Count incidents from Parquet if available
-    inc_files = glob.glob(os.path.join(settings.data_dir, "incidents", "*.parquet"))
-    active_incidents = bench_data.get("incidents_found", 2) if bench_data else 2
-    total_events = bench_data.get("events_processed", 8139337) if bench_data else 8139337
-    detections_count = bench_data.get("detections_count", 26) if bench_data else 26
-    peak_memory_mb = bench_data.get("peak_memory_mb", round(metrics.memory_process_mb, 1)) if bench_data else round(metrics.memory_process_mb, 1)
+    inc_files = glob.glob(os.path.join(settings.data_dir, 'incidents', '*.parquet'))
+    active_incidents = bench_data.get('incidents_found', 2) if bench_data else 2
+    total_events = bench_data.get('events_processed', 8139337) if bench_data else 8139337
+    detections_count = bench_data.get('detections_count', 26) if bench_data else 26
+    peak_memory_mb = bench_data.get('peak_memory_mb', round(metrics.memory_process_mb, 1)) if bench_data else round(metrics.memory_process_mb, 1)
 
     if inc_files and not bench_data:
         try:
             import duckdb
-            inc_glob = os.path.join(settings.data_dir, "incidents", "*.parquet").replace("\\", "/")
-            con = duckdb.connect(":memory:")
+            inc_glob = os.path.join(settings.data_dir, 'incidents', '*.parquet').replace('\\', '/')
+            con = duckdb.connect(':memory:')
             row = con.execute(f"SELECT COUNT(*) FROM read_parquet('{inc_glob}')").fetchone()
             con.close()
             if row and row[0]:
@@ -137,32 +137,32 @@ def get_system_status():
         except Exception:
             pass
 
-    pipeline_status = "IDLE"
-    current_stage = "Precomputed Incident Artifact Serialization"
+    pipeline_status = 'IDLE'
+    current_stage = 'Precomputed Incident Artifact Serialization'
     progress_pct = 100
     if active_run and _registry:
         job = _registry.get_job(active_run)
         if job:
-            pipeline_status = job.get("status", "RUNNING")
-            current_stage = "Correlation & Clustering"
+            pipeline_status = job.get('status', 'RUNNING')
+            current_stage = 'Correlation and Clustering'
             progress_pct = 50
 
-    metrics_data = bench_data.get("metrics", {}) if bench_data else {}
-    det_val = metrics_data.get("detection_recall_pct", 96.3)
-    lbl_val = metrics_data.get("label_accuracy_pct", 100.0)
-    pth_val = metrics_data.get("path_reconstruction_pct", 100.0)
-    fa_val = metrics_data.get("false_alarm_rate_pct", 3.8)
-    dur_sec = bench_data.get("duration_sec", bench_data.get("total_duration_seconds", 410.3)) if bench_data else 410.3
-    dur_str = f"{dur_sec:.1f}s" if dur_sec < 60 else f"{dur_sec/60:.2f} min"
-    peak_mem_str = f"{peak_memory_mb:.1f} MB (Peak)" if peak_memory_mb < 1024 else f"{peak_memory_mb/1024:.2f} GB (Peak)"
-    lat_ms = bench_data.get("investigation_latency_ms", 38.0) if bench_data else 38.0
-    lat_str = f"{lat_ms:.0f} ms" if lat_ms < 1000 else f"{lat_ms/1000:.2f} s"
+    metrics_data = bench_data.get('metrics', {}) if bench_data else {}
+    det_val = metrics_data.get('detection_recall_pct', 96.3)
+    lbl_val = metrics_data.get('label_accuracy_pct', 100.0)
+    pth_val = metrics_data.get('path_reconstruction_pct', 100.0)
+    fa_val = metrics_data.get('false_alarm_rate_pct', 3.8)
+    dur_sec = bench_data.get('duration_sec', bench_data.get('total_duration_seconds', 410.3)) if bench_data else 410.3
+    dur_str = f'{dur_sec:.1f}s' if dur_sec < 60 else f'{dur_sec/60:.2f} min'
+    peak_mem_str = f'{peak_memory_mb:.1f} MB (Peak)' if peak_memory_mb < 1024 else f'{peak_memory_mb/1024:.2f} GB (Peak)'
+    lat_ms = bench_data.get('investigation_latency_ms', 38.0) if bench_data else 38.0
+    lat_str = f'{lat_ms:.0f} ms' if lat_ms < 1000 else f'{lat_ms/1000:.2f} s'
 
     return {
-        "run_id": (bench_data.get("run_id") if bench_data else None) or active_run or "RUN-90CB0889",
-        "status": "COMPLETED" if pipeline_status == "IDLE" else pipeline_status,
-        "pipeline_status": pipeline_status,
-        "current_stage": current_stage,
+        'run_id': (bench_data.get('run_id') if bench_data else None) or active_run or 'RUN-90CB0889',
+        'status': 'COMPLETED' if pipeline_status == 'IDLE' else pipeline_status,
+        'pipeline_status': pipeline_status,
+        'current_stage': current_stage,
         "progress_pct": progress_pct,
         "elapsed_seconds": int(dur_sec),
         "records_processed": total_events,
