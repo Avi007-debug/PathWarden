@@ -1,0 +1,43 @@
+# PathWarden Backend - FastAPI & DuckDB Graph Reconstruction Engine
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install curl for container healthcheck and basic build tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy backend codebase and ingestion runners
+COPY backend/ ./backend/
+COPY run_investigation.py .
+COPY pyproject.toml .
+COPY edr_events.json* .
+COPY firex-30G.log.manifest.json* .
+
+# Prepare data storage structure for Parquet and DuckDB
+RUN mkdir -p /app/data/events \
+    /app/data/detections \
+    /app/data/attack_steps \
+    /app/data/attack_edges \
+    /app/data/incidents \
+    /app/data/benchmarks \
+    /app/data/reports \
+    /app/backend/logs
+
+ENV PYTHONUNBUFFERED=1
+ENV DATA_DIR=/app/data
+ENV PYTHONPATH=/app:/app/backend
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 --start-period=5s \
+  CMD curl -f http://localhost:8000/status || exit 1
+
+CMD ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+

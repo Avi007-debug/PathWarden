@@ -2,136 +2,187 @@
 
 > **Trace the attack. Expose the path. Defend what matters.**
 
-PathWarden is an evidence-driven cyberattack reconstruction and threat investigation platform. It transforms large volumes of heterogeneous security logs into correlated incidents, ordered attack paths, explainable detections, and evidence-backed reachability assessments.
+PathWarden is an evidence-driven cyberattack path reconstruction and threat investigation platform. It transforms large volumes of heterogeneous security logs into correlated incidents, ordered attack paths, explainable detections, evidence-backed reachability assessments, and auto-written executive incident briefings.
 
 🌐 **Live Production Deployment**: [https://path-warden-delta.vercel.app](https://path-warden-delta.vercel.app/)
 
 ---
 
-## 1. Product Capabilities & Architecture
+## 1. Functional Requirements & Bonus Matrix
 
-PathWarden answers the 10 critical operational questions for security investigators:
-
-1. **What happened?** - Coherent multi-stage intrusion reconstruction.
-2. **Where did the attack begin?** - Initial access vector and root cause identification.
-3. **Which users, hosts, and processes were involved?** - Contextual entity correlation.
-4. **What happened next?** - Directed causal attack sequence (not raw timestamp guessing).
-5. **Why are these events considered related?** - Explicit non-temporal relationship evidence (process lineage, session tokens, lateral movement, RPC streams).
-6. **Which MITRE ATT&CK techniques and Cyber Kill Chain stages are supported?** - Grounded mapping with confidence ratings.
-7. **What evidence supports each relationship?** - Inspectable source records for every node and edge.
-8. **Which systems have demonstrated access?** - Confirmed **Observed Access** (`OBSERVED_SESSION`).
-9. **Which systems are only potentially reachable?** - Inferred **Potential Reachability** (`NETWORK_REACHABLE`, `PRIVILEGE_RELATIONSHIP`).
-10. **What limitations or missing data could affect the investigation?** - Explicit data quality caveats (`HOST_INFERRED`, `TIMESTAMP_UNCERTAIN`, `UNKNOWN_EVENT_TYPE`).
-
----
-
-## 2. Visual Design System
-
-The PathWarden UI is engineered with an **experimental modern brutalist** aesthetic tailored for high-intensity Security Operations Centers (SOC):
-
-- **Palette Tokens**:
-  - `Electric Blue (#2563FF)`: Primary investigative actions and interactive states.
-  - `Cyan Blue (#00C8FF)`: Attack path highlights and selected graph elements.
-  - `Acid Green (#B7FF3C)`: Confirmed observed sessions and high-confidence metrics.
-  - `Deep Navy (#07111F)`: Dark mode primary backdrop.
-  - `Dark Surface (#0D1B2A)`: Layered dark panels with fine blue-gray borders (`#1E3550`).
-  - `Light Background (#F5F8F6)` & `Light Surface (#FFFFFF)`: Independent light mode with dark charcoal text (`#101820`).
-- **Typography**:
-  - Headings: Space Grotesk / Sora
-  - Interface text: Inter
-  - Metadata & Telemetry: IBM Plex Mono
-- **Themes**:
-  - Full Dark and Light theme implementations with instant toggle, OS preference detection, and localStorage persistence.
-  - Non-color-alone status communication: Colors paired with shapes, tags, and monospaced labels.
-
----
-
-## 3. Investigation Workspace Pages
-
-| Route | Page | Purpose |
+| Requirement | Description | PathWarden Implementation |
 |---|---|---|
-| `/` | **Overview Dashboard** | Real-time processing funnel, key metrics, recent intrusions, dataset health & terminal dispositions reconciliation. |
-| `/incidents` | **Incident Explorer** | Filterable, searchable workspace with multi-attribute filtering (Severity, Tactic, Host, User, Confidence). |
-| `/incidents/[id]` | **Incident Investigation** | **Centerpiece workspace**: Interactive Cytoscape.js directed attack graph, synchronized chronological timeline, attack-step explanation panel, and evidence inspection drawer. |
-| `/reachability` | **Reachability Analysis** | Strict separation of confirmed **Observed Access** from **Potential Reachability** (hops, policy assumptions, and privilege exposure). |
-| `/data-quality` | **Data Quality & Observability** | Ingestion accounting funnel (`records_read = malformed + duplicate_dropped + valid_excluded + eligible`), telemetry quality flags, and source-level breakdown. |
-| `/benchmarks` | **Performance & Accuracy** | 30 GB Advanced Tier competition targets vs measured results (runtime, 8.3 MB/s sustained throughput, 8 GB container memory budget, detection recall, ATT&CK label accuracy, false alarms). |
+| **FR-1** | **Bounded Memory Streaming** | Constant memory streaming chunker (DuckDB + PyArrow Parquet) handles 15 GB / 30 GB datasets under an 8.0 GB RAM lock. |
+| **FR-2** | **Suspicious Event Detection** | Deterministic SQL rule predicates for credential access, privilege escalation, and lateral execution. |
+| **FR-3** | **MITRE ATT&CK & Kill Chain Mapping** | Grounded technique identification (`T1566.001`, `T1003`, `T1021.002`) and kill-chain phase progression. |
+| **FR-4** | **Incident Linking by Entity & Time** | Multi-attribute correlation over host, user identity, IP address, and causal window constraints. |
+| **FR-5** | **Attack Path Timeline & Directed Graph** | Synchronized Cytoscape.js attack DAG and chronological timeline with side-by-side full window enlargement. |
+| **FR-6** | **Reachability Assessment** | Strict separation of confirmed **Observed Access** (`OBSERVED_SESSION`) from **Potential Reachability** (`NETWORK_REACHABLE`, `PRIVILEGE_RELATIONSHIP`). |
+| **FR-7** | **API & Operational Workspace** | Production FastAPI backend (`GET /incidents/{id}/path`) paired with Next.js Brutalist HUD console. |
+| **[BONUS B-1]** | **Prioritized Incident Risk Scoring** | Multi-factor risk engine (0-100) combining severity, confidence, step count, tactic breadth, and objective achievement so highest-risk attacks sort on top. |
+| **[BONUS B-2]** | **Auto-Written Incident Report in Plain English** | On-Device Tri-Agent Synthesis Engine & local GPU LLM integration (Ollama / Qwen 2.5 Coder 1.5B) producing executive summaries and actionable containment checklists. |
+| **[BONUS B-3]** | **Raw Alerts Merged Accounting** | Exact telemetry accounting showing how many raw security alerts (e.g. 18 alerts) were clustered into attack steps (56%–86% noise reduction). |
+| **[BONUS B-4]** | **Config-Driven Detection Rules** | Hot-reloadable Sigma-compatible YAML rules configuration (`backend/data/rules.yaml`) with zero code modifications needed. |
 
 ---
 
-## 4. Dataset Integration & Demonstration Mode
+## 2. Quickstart with Docker Compose
 
-PathWarden is pre-configured to operate seamlessly in two modes:
-
-1. **Synthetic Demo Mode (`DEMO DATA - SYNTHETIC SCENARIO`)**:
-   - An internally consistent, evidence-backed synthetic scenario modeling an Advanced Persistent Threat (APT) lateral intrusion from workstation macro execution (`WS-EXEC-04`), LSASS credential dumping, Pass-the-Hash onto `SRV-APP-PROD01`, directory replication (DCSync) to domain controller `DC01.CORP.LOCAL`, Golden Ticket generation, and periodic C2 beaconing.
-   - Grounded in real Elastic Common Schema (ECS) EDR telemetry matching `edr_events.json`.
-2. **Live Backend API Mode (`LIVE BACKEND API`)**:
-   - Connects directly to the PathWarden FastAPI backend (`http://localhost:8000` configurable via `NEXT_PUBLIC_API_BASE_URL`).
-   - One-click toggle in the top navigation bar with persistent indicator.
-
----
-
-## 5. Getting Started
+Run the entire PathWarden ecosystem (FastAPI backend + DuckDB storage + Next.js frontend console) with a single command:
 
 ### Prerequisites
+- [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/) v2.0+
 
-- **Node.js**: v18.0.0+ (Tested on v24.18.0)
-- **npm**: v9.0.0+ (Tested on v11.6.2)
-
-### Installation
+### 1. Launch the Stack
 
 ```bash
-# Navigate to the frontend directory
-cd frontend
+# Clone the repository
+git clone https://github.com/Vedant-Panchal/PathWarden.git
+cd PathWarden
 
-# Install dependencies
-npm install
+# Build and start all containers in detached mode
+docker compose up --build -d
 ```
 
-### Running the Development Console
+### 2. Verify Container Health
 
 ```bash
-# Start Next.js development server
-npm run dev
-
-# Open in browser:
-# http://localhost:3000
+# Check running containers
+docker compose ps
 ```
 
-### Running Type Checks & Linting
+The stack exposes:
+- **Frontend SOC Console**: [http://localhost:3000](http://localhost:3000)
+- **Backend API & Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **System Telemetry & Health**: [http://localhost:8000/status](http://localhost:8000/status)
+
+### 3. Stop or Restart Containers
 
 ```bash
-# Type check with strict TypeScript
-npm run typecheck
+# View live logs
+docker compose logs -f
 
-# Lint with ESLint
-npm run lint
-```
-
-### Creating Production Build
-
-```bash
-# Build optimized production bundle
-npm run build
-
-# Start production server
-npm start
+# Stop containers
+docker compose down
 ```
 
 ---
 
-## 6. Documented Backend API Contracts
+## 3. Bonus B-2: On-Device GPU LLM & Tri-Agent Architecture
 
-PathWarden integrates with the following FastAPI endpoints documented in `ChainSight_v5_Refined_Implementation_Plan_v5.1.md`:
+PathWarden introduces an **On-Device Agentic Synthesis Architecture** for generating authoritative, plain-English incident briefings without leaking sensitive telemetry to third-party cloud APIs.
 
-- `POST /run`: Initiate ingestion and attack path reconstruction run.
-- `GET /status`: Retrieve current processing run stage, records processed, and memory usage.
-- `GET /incidents`: Retrieve list of correlated incident clusters.
-- `GET /incidents/{id}`: Retrieve incident summary and details.
-- `GET /incidents/{id}/path`: Retrieve precomputed attack graph nodes and directed edges.
-- `GET /incidents/{id}/reach`: Retrieve observed and potential reachability assessments.
-- `GET /incidents/{id}/report`: Retrieve deterministic incident markdown report.
-- `GET /data-quality`: Retrieve record reconciliation funnel and quality flags breakdown.
-- `GET /bench`: Retrieve benchmark runtime, throughput, memory peak, and scorer accuracy.
-- `GET /evidence?event_uid=...&ctx=5`: Retrieve raw and normalized telemetry record for any step or edge.
+```
++-----------------------------------------------------------------+
+|                     RAW INCIDENT & ATTACK DAG                   |
++-----------------------------------------------------------------+
+                                |
+                                v
++-----------------------------------------------------------------+
+| [AGENT 1: Detection Analyst Agent]                              |
+| - Evaluates MITRE ATT&CK techniques, raw detection alerts,      |
+|   confidence scores, and false positive risk ratings.           |
+| - Quantifies Bonus B-3 alert merging and noise reduction.       |
++-----------------------------------------------------------------+
+                                |
+                                v
++-----------------------------------------------------------------+
+| [AGENT 2: Forensics & Blast Radius Agent]                       |
+| - Traces timeline from root-cause host to crown jewels.         |
+| - Differentiates observed access from potential reachability.   |
++-----------------------------------------------------------------+
+                                |
+                                v
++-----------------------------------------------------------------+
+| [AGENT 3: Executive Reporter Agent]                             |
+| - Synthesizes findings into human-readable Plain English.       |
+| - Outputs: Executive Summary, Chronological Walkthrough,        |
+|   Blast Radius Assessment, and Prioritized Remediation Plan.    |
++-----------------------------------------------------------------+
+```
+
+### Connecting a Local GPU LLM (e.g. Ollama)
+PathWarden automatically detects local GPU models running via [Ollama](https://ollama.ai/):
+
+```bash
+# On your host workstation with a GPU (NVIDIA / Apple Silicon):
+ollama run qwen2.5-coder:1.5b
+# Or serve in background:
+ollama serve
+```
+
+When Docker Compose runs, `docker-compose.yml` routes `OLLAMA_HOST=http://host.docker.internal:11434`. 
+- If Ollama is active on your GPU, the **Executive Reporter Agent** queries `qwen2.5-coder:1.5b` locally.
+- If no GPU server is running, PathWarden's built-in **Deterministic Tri-Agent Engine** immediately produces the report with 0 ms lag and zero external dependencies.
+
+---
+
+## 4. Side-by-Side Dual Canvas Enlargement
+
+When investigating large attacks with 10–20 steps:
+1. Click **`ENLARGE CANVAS`** (or the Enlarge button on the Cytoscape toolbar / Timeline header).
+2. The entire investigation view expands into a **full-window side-by-side workspace**:
+   - **Left Canvas**: Full-height interactive Cytoscape.js attack DAG (pan, zoom, auto-fit).
+   - **Right Canvas**: Step Inspector and complete Chronological Timeline side-by-side, allowing endless vertical scrolling without cramping the graph.
+3. Press **`Esc`** or click **`EXIT FULLSCREEN`** to immediately restore the standard HUD.
+
+---
+
+## 5. Processing 15 GB / 30 GB Log Datasets
+
+To run an end-to-end investigation run on a log file:
+
+### Using Docker Compose
+```bash
+# Place your log file in the ./data directory:
+cp firex-30g.log ./data/
+
+# Execute investigation inside the backend container:
+docker compose exec backend python run_investigation.py --input /app/data/firex-30g.log --workers 3
+```
+
+### Running Locally without Docker
+
+#### Backend Setup
+```bash
+# Create virtual environment
+python -m venv venv
+# Windows:
+.\venv\Scripts\Activate.ps1
+# Linux/macOS:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run test suite
+python -m pytest -q
+
+# Start FastAPI server
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+#### Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+# Open http://localhost:3000
+```
+
+---
+
+## 6. Documented API Contracts
+
+PathWarden exposes the following RESTful endpoints:
+
+- `GET /status`: System RAM telemetry, active enclave memory budget, and worker states.
+- `GET /incidents`: Correlated incident clusters sorted by **Risk Score DESC [Bonus B-1]**.
+- `GET /incidents/{id}`: Detailed incident payload including attack steps, causal edges, and **Raw Alerts Merged [Bonus B-3]**.
+- `GET /incidents/{id}/path`: Reconstructed Cytoscape DAG nodes and edges.
+- `GET /incidents/{id}/report`: Auto-written plain English executive incident briefing **[Bonus B-2]**.
+- `GET /incidents/{id}/reach`: Confirmed observed sessions vs. potential reachability.
+- `GET /data-quality`: 6-stage record accounting funnel and 4-way reconciliation invariant check.
+- `GET /rules`: Active detection rules loaded from configuration YAML **[Bonus B-4]**.
+- `GET /bench`: Target Matrix competition benchmarks and query latency metrics.
+- `GET /evidence?event_uid=...&ctx=5`: Inspectable source records for any graph node or edge.
