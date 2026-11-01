@@ -47,10 +47,10 @@ export function ChronologicalTimeline({
                   ? "bg-[#B7FF3C] text-black border-black shadow-[2px_2px_0px_#000]"
                   : "bg-[var(--bg-surface)] text-[var(--text-muted)] hover:text-[#00C8FF] border-[var(--border-color)]"
               )}
-              title={isEnlarged ? "Restore Split View" : "Enlarge Timeline (Full Workspace)"}
+              title={isEnlarged ? "Restore Standard View (Esc)" : "Enlarge Cytoscape & Timeline Full Window (Side-by-Side)"}
             >
               {isEnlarged ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-              <span className="text-[10px] uppercase font-bold">{isEnlarged ? "SPLIT VIEW" : "ENLARGE"}</span>
+              <span className="text-[10px] uppercase font-bold">{isEnlarged ? "RESTORE" : "ENLARGE"}</span>
             </button>
           )}
         </div>

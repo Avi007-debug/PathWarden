@@ -39,6 +39,8 @@ interface AttackGraphViewProps {
   onSelectEdge: (edge: AttackEdge | null) => void;
   isTimelineOpen?: boolean;
   onToggleTimeline?: () => void;
+  isWorkspaceEnlarged?: boolean;
+  onToggleWorkspaceEnlarge?: () => void;
 }
 
 export function AttackGraphView({
@@ -50,6 +52,8 @@ export function AttackGraphView({
   onSelectEdge,
   isTimelineOpen,
   onToggleTimeline,
+  isWorkspaceEnlarged,
+  onToggleWorkspaceEnlarge,
 }: AttackGraphViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
@@ -317,7 +321,7 @@ export function AttackGraphView({
       setTimeout(() => fitGraph(35), 500),
     ];
     return () => timers.forEach(clearTimeout);
-  }, [isFullscreen, fitGraph]);
+  }, [isFullscreen, isWorkspaceEnlarged, fitGraph]);
 
   const handleZoomIn = () => {
     cyRef.current?.zoom(cyRef.current.zoom() * 1.25);
@@ -388,17 +392,17 @@ export function AttackGraphView({
           <Focus className="w-3.5 h-3.5" />
         </button>
         <button
-          onClick={toggleFullscreen}
+          onClick={onToggleWorkspaceEnlarge || toggleFullscreen}
           className={cn(
             "px-2 py-1 border transition-all cursor-pointer flex items-center gap-1 font-mono text-[10px] font-bold uppercase",
-            isFullscreen
+            (isWorkspaceEnlarged || isFullscreen)
               ? "text-black bg-[#B7FF3C] border-black font-bold shadow-[1px_1px_0px_#000]"
               : "text-[var(--text-muted)] hover:text-[#00C8FF] hover:bg-[var(--bg-surface-elevated)] border-[var(--border-subtle)]"
           )}
-          title={isFullscreen ? "Exit Fullscreen (Esc)" : "Enlarge Cytoscape Graph (Full Screen)"}
+          title={(isWorkspaceEnlarged || isFullscreen) ? "Restore Standard View (Esc)" : "Enlarge Cytoscape & Timeline Full Window (Side-by-Side)"}
         >
-          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-          <span className="hidden sm:inline">{isFullscreen ? "RESTORE" : "ENLARGE"}</span>
+          {(isWorkspaceEnlarged || isFullscreen) ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          <span className="hidden sm:inline">{(isWorkspaceEnlarged || isFullscreen) ? "RESTORE" : "ENLARGE"}</span>
         </button>
         <button
           onClick={handleReset}

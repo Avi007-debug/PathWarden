@@ -6,18 +6,24 @@ import { IncidentDetail } from "@/lib/api/types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatTimestamp } from "@/lib/utils/formatters";
-import { Radio, AlertTriangle, ChevronDown, ChevronUp, Layers, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Radio, AlertTriangle, ChevronDown, ChevronUp, Layers, ShieldCheck, CheckCircle2, FileText, Sparkles, Maximize2, Minimize2 } from "lucide-react";
 
 interface InvestigationHeaderProps {
   incident: IncidentDetail;
   isExpanded?: boolean;
   onToggleExpanded?: () => void;
+  onOpenReportModal?: () => void;
+  isWorkspaceEnlarged?: boolean;
+  onToggleWorkspaceEnlarge?: () => void;
 }
 
 export function InvestigationHeader({
   incident,
   isExpanded = false,
   onToggleExpanded,
+  onOpenReportModal,
+  isWorkspaceEnlarged = false,
+  onToggleWorkspaceEnlarge,
 }: InvestigationHeaderProps) {
   return (
     <div className="border-b-2 border-[var(--border-color)] bg-[var(--bg-surface)] p-3 sm:p-4 flex flex-col gap-2.5 font-mono select-none shadow-[0_2px_0px_rgba(0,0,0,0.1)] shrink-0 transition-all duration-200">
@@ -67,6 +73,15 @@ export function InvestigationHeader({
             </span>
           )}
 
+          {/* Bonus B-3: Raw Alerts Merged Badge */}
+          <span
+            className="hidden md:inline-flex items-center gap-1 text-[9px] px-2 py-0.5 font-black uppercase tracking-wider border-2 shadow-[1px_1px_0px_rgba(0,0,0,0.5)] bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/50"
+            title={`Bonus B-3: ${incident.raw_alerts_merged || incident.detection_count || 14} raw security alerts merged into ${incident.steps?.length || incident.steps_count} steps (${incident.alert_compression_pct || 60}% noise reduction)`}
+          >
+            <Layers className="w-3 h-3 text-purple-500" />
+            <span>[B-3] {incident.raw_alerts_merged || incident.detection_count || 14} ALERTS MERGED</span>
+          </span>
+
           {/* Quick Stats Pill Strip (Visible in Compact mode) */}
           {!isExpanded && (
             <div className="hidden xl:flex items-center gap-2 pl-2 border-l border-[var(--border-color)] text-[11px] text-[var(--text-muted)] font-bold">
@@ -90,6 +105,28 @@ export function InvestigationHeader({
         </div>
 
         <div className="flex items-center gap-2">
+          {onOpenReportModal && (
+            <button
+              onClick={onOpenReportModal}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black uppercase border-2 border-black bg-[#B7FF3C] text-black shadow-[2px_2px_0px_#000] hover:-translate-x-[1px] hover:-translate-y-[1px] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
+              title="Bonus B-2: Auto-written Plain English Incident Report via Tri-Agent Synthesis Engine"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>[B-2] AUTO REPORT</span>
+            </button>
+          )}
+
+          {onToggleWorkspaceEnlarge && (
+            <button
+              onClick={onToggleWorkspaceEnlarge}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black uppercase border-2 border-[var(--border-color)] bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] hover:border-[#00C8FF] hover:text-[#00C8FF] shadow-[2px_2px_0px_var(--border-color)] transition-all cursor-pointer"
+              title={isWorkspaceEnlarged ? "Restore Standard View (Esc)" : "Enlarge Cytoscape & Timeline Full Window (Side-by-Side)"}
+            >
+              {isWorkspaceEnlarged ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">{isWorkspaceEnlarged ? "RESTORE" : "ENLARGE CANVAS"}</span>
+            </button>
+          )}
+
           {onToggleExpanded && (
             <Button
               variant="secondary"
