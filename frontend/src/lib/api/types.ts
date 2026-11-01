@@ -192,7 +192,10 @@ export type EdgeRelationshipType =
   | "suspicious_script_launch"
   | "lateral_movement"
   | "persistence_trigger"
-  | "credential_reuse";
+  | "credential_reuse"
+  | "command_sequence"
+  | "process_lineage"
+  | "authentication_recovery";
 
 export interface AttackEdge {
   edge_id: string;

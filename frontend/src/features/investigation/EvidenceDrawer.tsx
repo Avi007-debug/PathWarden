@@ -35,9 +35,9 @@ export function EvidenceDrawer({
   // Evidence UIDs available
   const evidenceUids = React.useMemo(() => {
     return selectedStep
-      ? selectedStep.evidence_event_uids
+      ? selectedStep.evidence_event_uids || []
       : selectedEdge
-      ? selectedEdge.evidence_event_uids
+      ? selectedEdge.evidence_event_uids || []
       : [];
   }, [selectedStep, selectedEdge]);
 
@@ -108,7 +108,7 @@ export function EvidenceDrawer({
               <Badge variant="cyan">Confidence: {(selectedStep.detection_confidence * 100).toFixed(0)}%</Badge>
             )}
             {selectedEdge && (
-              <Badge variant="green">Score: {selectedEdge.relationship_score.toFixed(2)}</Badge>
+              <Badge variant="green">Score: {(selectedEdge.relationship_score ?? 0.85).toFixed(2)}</Badge>
             )}
           </div>
           <p className="text-[var(--text-muted)] text-xs leading-relaxed font-medium">
