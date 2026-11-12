@@ -211,7 +211,7 @@ To process massive 30 GB (20M+ events) forensic logs under a strict single-node 
 
 | Component | Scalability Bottleneck | Implemented Optimization | Complexity / Bound |
 | :--- | :--- | :--- | :--- |
-| **FR-1 Ingestion** | In-memory string expansion of 30 GB logs | 64 MB binary chunk reader with backward newline seeking (`\n`) | Peak RAM < 500 MB |
+| **FR-1 Ingestion** | In-memory string expansion of 30 GB logs | 64 MB binary chunk reader with backward newline seeking (`\n`) | Peak RAM < 500 MB per worker (3–4 GB overall system usage) |
 | **FR-2 Detection** | Row-by-row iteration in Python | Vectorized DuckDB SQL directly over PyArrow Parquet views | Native C++ columnar execution |
 | **FR-4 Candidate Joins** | $O(N^2)$ alert comparisons ($10^{10}$ ops) | DuckDB windowed equi-joins (`event_ts BETWEEN t AND t + 600`) | Lazy generator streaming |
 | **FR-4 Decoy Resistance** | Supernode collapse from DCs/proxies | Logarithmic degree damping penalty: $\max(0.1, 1.0 - 0.5 \ln(1 + \text{excess}) \times 0.15)$ | Requires $\ge 2$ corroborations for deg > 50 |
