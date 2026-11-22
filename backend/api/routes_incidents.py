@@ -144,14 +144,15 @@ def list_incidents(
         incidents.sort(key=lambda x: (x.get("risk_score", 0), x.get("start_time", "")), reverse=True)
         return incidents[offset : offset + limit]
 
-    # Pre-fetch actual step counts from attack_steps Parquet if present
+    # Pre-fetch actual step counts from latest active attack_steps Parquet if present
     step_counts: Dict[str, int] = {}
-    step_files = [f.replace("\\", "/") for f in glob.glob(os.path.join(_DATA_DIR, "attack_steps", "*.parquet"))]
-    if step_files:
+    step_file_list = glob.glob(os.path.join(_DATA_DIR, "attack_steps", "*.parquet"))
+    if step_file_list:
         try:
+            latest_step = max(step_file_list, key=os.path.getmtime).replace("\\", "/")
             con_sc = _get_con()
             for inc_id, scnt in con_sc.execute(
-                f"SELECT incident_id, COUNT(*) FROM read_parquet({step_files}) GROUP BY incident_id"
+                f"SELECT incident_id, COUNT(*) FROM read_parquet('{latest_step}') GROUP BY incident_id"
             ).fetchall():
                 step_counts[inc_id] = scnt
             con_sc.close()
@@ -316,17 +317,20 @@ def get_incident_path(incident_id: str):
 
 
 def _fetch_graph_data(incident_id: str) -> dict:
-    step_files = [f.replace("\\", "/") for f in glob.glob(os.path.join(_DATA_DIR, "attack_steps", "*.parquet"))]
-    edge_files = [f.replace("\\", "/") for f in glob.glob(os.path.join(_DATA_DIR, "attack_edges", "*.parquet"))]
-    if not step_files or not edge_files:
+    step_file_list = glob.glob(os.path.join(_DATA_DIR, "attack_steps", "*.parquet"))
+    edge_file_list = glob.glob(os.path.join(_DATA_DIR, "attack_edges", "*.parquet"))
+    if not step_file_list or not edge_file_list:
         return _demo_graph(incident_id)
+
+    latest_step_file = max(step_file_list, key=os.path.getmtime).replace("\\", "/")
+    latest_edge_file = max(edge_file_list, key=os.path.getmtime).replace("\\", "/")
 
     cands = _candidate_ids(incident_id)
     placeholders = ",".join(["?"] * len(cands))
     con = _get_con()
     try:
-        con.execute(f"CREATE VIEW steps AS SELECT * FROM read_parquet({step_files})")
-        con.execute(f"CREATE VIEW edges AS SELECT * FROM read_parquet({edge_files})")
+        con.execute(f"CREATE VIEW steps AS SELECT * FROM read_parquet('{latest_step_file}')")
+        con.execute(f"CREATE VIEW edges AS SELECT * FROM read_parquet('{latest_edge_file}')")
 
         step_rows = con.execute(
             f"SELECT * FROM steps WHERE incident_id IN ({placeholders}) ORDER BY order_index", cands
